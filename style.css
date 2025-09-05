@@ -5,6 +5,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fix for screen ratio on small devices */
+@media (max-width: 767px) {
+  .min-h-screen.md\:flex {
+    flex-direction: column;
+    min-height: auto;
+  }
+}
+
 /* Style for the active navigation link */
 .sidebar-link.active {
   background-color: #eef2ff; /* indigo-50 */

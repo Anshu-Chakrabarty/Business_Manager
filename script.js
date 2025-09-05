@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
     JSON.parse(localStorage.getItem("pendingCommissions")) || [];
   let paidCommissions =
     JSON.parse(localStorage.getItem("paidCommissions")) || [];
-  let agentPassword = localStorage.getItem("agentPassword") || null;
+  let ownerPassword = localStorage.getItem("ownerPassword") || null;
 
   // --- DOM ELEMENTS ---
   const sidebar = document.getElementById("sidebar");
@@ -42,8 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // --- STATE ---
   let cart = [];
   let passwordCallback = null;
-  let isAgentLoggedIn = false;
-  let loggedInAgentName = "";
+  let loggedInUser = null; // Can be 'owner' or an agent object
 
   // --- DATA PERSISTENCE ---
   const saveData = () => {
@@ -58,8 +57,8 @@ document.addEventListener("DOMContentLoaded", function () {
       JSON.stringify(pendingCommissions)
     );
     localStorage.setItem("paidCommissions", JSON.stringify(paidCommissions));
-    if (agentPassword) {
-      localStorage.setItem("agentPassword", agentPassword);
+    if (ownerPassword) {
+      localStorage.setItem("ownerPassword", ownerPassword);
     }
   };
 
@@ -75,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>`,
     store: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Store Management</h2>
-                <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Store</h3><form id="add-store-form" class="space-y-4"><input type="text" name="storeName" placeholder="Store Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="text" name="customerName" placeholder="Customer Name" class="w-full p-3 border border-gray-300 rounded-lg" required><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="number" step="0.01" name="transport" placeholder="Transportation Charge (₹) (Optional)" class="w-full p-3 border border-gray-300 rounded-lg"><input type="number" step="0.01" name="storeCommission" placeholder="Store Commission (%)" class="w-full p-3 border border-gray-300 rounded-lg" required></div><textarea name="details" placeholder="Basic Details" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Store</button></form></div>
+                <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Store</h3><form id="add-store-form" class="space-y-4"><input type="text" name="storeName" placeholder="Store Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="text" name="customerName" placeholder="Customer Name" class="w-full p-3 border border-gray-300 rounded-lg" required><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="number" step="0.01" name="transport" placeholder="Transportation Charge (₹) (Optional)" class="w-full p-3 border border-gray-300 rounded-lg"><input type="number" step="0.01" name="storeCommission" placeholder="Store Comm (%)" class="w-full p-3 border border-gray-300 rounded-lg" required></div><textarea name="details" placeholder="Basic Details" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Store</button></form></div>
                 <div class="mt-8 mb-4">
                   <input type="text" id="search-store-input" placeholder="Search by Store or Customer Name..." class="w-full p-3 border border-gray-300 rounded-lg">
                 </div>
@@ -152,19 +151,24 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div id="bill-output" class="bg-white p-8 rounded-xl shadow-lg">
                         </div>
                     <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
-                          <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
-                              Share
-                          </button>
-                          <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download Bill</button>
+                            <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+                                Share
+                            </button>
+                            <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download Bill</button>
                     </div>
                 </div>`,
-    agent: () => `
+    agent: () => {
+      const isOwner = loggedInUser === 'owner';
+      const agentName = isOwner ? 'Owner' : (loggedInUser ? loggedInUser.agentName : '');
+      const adminToolsClass = isOwner ? "" : "hidden";
+      
+      return `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Agent Management</h2>
                 <div id="agent-auth-section"></div>
                 <div id="agent-content" class="hidden">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-2xl font-bold text-gray-800">Agent Dashboard for <span class="text-indigo-600">${loggedInAgentName}</span></h3>
+                        <h3 class="text-2xl font-bold text-gray-800">Agent Dashboard for <span class="text-indigo-600">${agentName}</span></h3>
                         <button id="agent-logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold">Logout</button>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -181,12 +185,10 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                         </div>
                     </div>
-                    <div class="mt-8 ${
-                      loggedInAgentName.toLowerCase() === "admin" ? "" : "hidden"
-                    }">
+                    <div class="mt-8 ${adminToolsClass}">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                             <h3 class="text-2xl font-bold text-gray-800">Admin: Manage Agents & Reports</h3>
-                             <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
+                              <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
                                 <div class="w-full sm:w-auto">
                                     <label for="agent-report-name" class="block text-sm font-medium text-gray-700">Select Agent</label>
                                     <select id="agent-report-name" class="p-2 border border-gray-300 rounded-lg w-full">
@@ -238,6 +240,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="bg-white p-6 rounded-xl shadow-md mt-8">
                             <form id="add-agent-form" class="space-y-4">
                                 <input type="text" name="agentName" placeholder="Agent Name" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                                <input type="password" name="agentPassword" placeholder="Agent Password" class="w-full p-3 border border-gray-300 rounded-lg" required>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Stores & Set Commission</label>
                                     <div id="agent-store-list" class="space-y-2 max-h-60 overflow-y-auto border p-4 rounded-lg">
@@ -259,22 +262,33 @@ document.addEventListener("DOMContentLoaded", function () {
                             <table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">#</th><th class="p-4 font-semibold text-sm">Agent Name</th><th class="p-4 font-semibold text-sm">Stores & Commissions</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="agents-table-body" class="divide-y divide-gray-200"></tbody></table>
                         </div>
                     </div>
-                </div>`,
+                </div>`;
+    },
     payment: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Payment Handling</h2>
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Record a Payment</h3>
                     <form id="add-payment-form" class="space-y-4">
-                        <select id="payment-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select Store</option></select>
+                        <select id="payment-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                            <option value="">Select Store</option>
+                        </select>
                         <div id="store-due-info" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg hidden"></div>
                         <div id="store-order-total-info" class="p-3 bg-blue-100 text-blue-800 rounded-lg hidden"></div>
-                        <input type="number" step="0.01" name="amount" placeholder="Amount Paid (₹)" class="w-full p-3 border border-gray-300 rounded-lg" required>
-                        <input type="text" name="paymentMethod" placeholder="Payment Method (e.g., Cash, Online)" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="cashAmount" class="block text-sm font-medium text-gray-700">Cash Amount (₹)</label>
+                                <input type="number" step="0.01" name="cashAmount" id="cashAmount" placeholder="Cash Amount" class="w-full p-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label for="onlineAmount" class="block text-sm font-medium text-gray-700">Online Amount (₹)</label>
+                                <input type="number" step="0.01" name="onlineAmount" id="onlineAmount" placeholder="Online Amount" class="w-full p-3 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
                         <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Record Payment</button>
                     </form>
                 </div>
                 <div class="mt-8">
-                      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                         <h3 class="text-2xl font-bold text-gray-800">Ledger Report</h3>
                           <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
                             <div class="w-full sm:w-auto">
@@ -296,8 +310,8 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <span class="hidden sm:inline">Download</span>
                             </button>
                         </div>
-                      </div>
-                    <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Store</th><th class="p-4 font-semibold text-sm">Amount (₹)</th><th class="p-4 font-semibold text-sm">Method</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="payments-table-body" class="divide-y divide-gray-200"></tbody></table></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Store</th><th class="p-4 font-semibold text-sm">Cash Amount (₹)</th><th class="p-4 font-semibold text-sm">Online Amount (₹)</th><th class="p-4 font-semibold text-sm">Total Amount (₹)</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="payments-table-body" class="divide-y divide-gray-200"></tbody></table></div>
                 </div>`,
     transportation: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Transportation Management</h2>
@@ -319,6 +333,8 @@ document.addEventListener("DOMContentLoaded", function () {
                                  }
                             </div>
                         </div>
+                        <input type="text" name="deliveryShopCode" placeholder="Delivery Shop Code" class="w-full p-3 border border-gray-300 rounded-lg">
+                        <input type="text" name="deliveryShopPhone" placeholder="Delivery Shop Phone Number" class="w-full p-3 border border-gray-300 rounded-lg">
                         <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Assign</button>
                     </form>
                 </div>
@@ -337,12 +353,16 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <input type="date" id="transport-download-start-date" class="p-2 border border-gray-300 rounded-lg w-full">
                             </div>
                             <div class="w-full sm:w-auto">
-                                <label for="transport-download-end-date" class="block text-sm font-medium text-gray-700">To</label>
-                                <input type="date" id="transport-download-end-date" class="p-2 border border-gray-300 rounded-lg w-full">
+                               <label for="transport-download-end-date" class="block text-sm font-medium text-gray-700">To</label>
+                               <input type="date" id="transport-download-end-date" class="p-2 border border-gray-300 rounded-lg w-full">
                             </div>
                             <button id="download-transport-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                <span class="hidden sm:inline">Download</span>
+                                <span class="hidden sm:inline">Download Delivery Challan</span>
+                            </button>
+                            <button id="download-store-details-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                                <span class="hidden sm:inline">Download Store Challan</span>
                             </button>
                         </div>
                     </div>
@@ -393,7 +413,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const navigateTo = (targetId) => {
     document.getElementById(`nav-${targetId}`).click();
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 767) {
       sidebar.classList.add("-translate-x-full");
     }
   };
@@ -410,7 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
           : content.classList.add("hidden");
       });
       renderPage(pageName);
-      if (window.innerWidth < 768) {
+      if (window.innerWidth < 767) {
         sidebar.classList.add("-translate-x-full");
       }
     });
@@ -449,7 +469,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .addEventListener("click", handlePlaceOrder);
     document
       .getElementById("download-orders-btn")
-      .addEventListener("click", handleDownloadProductQuantityExcel);
+      .addEventListener("click", handleDownloadOrdersExcel);
     renderStoreOptionsForOrder();
     renderProductsForOrder();
   }
@@ -470,61 +490,73 @@ document.addEventListener("DOMContentLoaded", function () {
     const agentReportNameSelect = document.getElementById("agent-report-name");
 
     const populateAgentSelectors = () => {
-        const allAgents = ["admin", ...agents.map(a => a.agentName)].sort();
-        if(agentReportNameSelect) {
-            agentReportNameSelect.innerHTML = `<option value="all">All Agents</option>` + allAgents.map(name => `<option value="${name}">${name}</option>`).join('');
-        }
-        const pendingAgentSelect = document.getElementById("agent-name-pending");
-        const paidAgentSelect = document.getElementById("agent-name-paid");
-        if(pendingAgentSelect) {
-            pendingAgentSelect.innerHTML = `<option value="">Select Agent</option>` + allAgents.map(name => `<option value="${name}">${name}</option>`).join('');
-        }
-        if(paidAgentSelect) {
-            paidAgentSelect.innerHTML = `<option value="">Select Agent</option>` + allAgents.map(name => `<option value="${name}">${name}</option>`).join('');
-        }
+      const allAgents = [{ agentName: "owner" }, ...agents];
+      if (agentReportNameSelect) {
+        agentReportNameSelect.innerHTML =
+          `<option value="all">All Agents</option>` +
+          allAgents.map((agent) => `<option value="${agent.agentName}">${agent.agentName}</option>`).join("");
+      }
+      const pendingAgentSelect = document.getElementById("agent-name-pending");
+      const paidAgentSelect = document.getElementById("agent-name-paid");
+      if (pendingAgentSelect) {
+        pendingAgentSelect.innerHTML =
+          `<option value="">Select Agent</option>` +
+          allAgents.map((agent) => `<option value="${agent.agentName}">${agent.agentName}</option>`).join("");
+      }
+      if (paidAgentSelect) {
+        paidAgentSelect.innerHTML =
+          `<option value="">Select Agent</option>` +
+          allAgents.map((agent) => `<option value="${agent.agentName}">${agent.agentName}</option>`).join("");
+      }
     };
-    
 
-    if (!agentPassword) {
-        authSection.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Create Admin Password</h3><p class="text-gray-600 mb-4">Create a secure password to manage agents and sensitive actions. This will be the master password.</p><form id="agent-signup-form" class="space-y-4"><input type="password" id="new-agent-password" placeholder="Enter new password" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="password" id="confirm-agent-password" placeholder="Confirm new password" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Create Password</button></form></div>`;
-        document.getElementById("agent-signup-form").addEventListener("submit", handleAgentSignup);
-    } else if (!isAgentLoggedIn) {
-        authSection.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Agent Login</h3><form id="agent-login-form" class="space-y-4"><input type="text" id="agent-name-input" placeholder="Agent Name (or 'admin')" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="password" id="agent-password-input" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Login</button></form></div>`;
-        document.getElementById("agent-login-form").addEventListener("submit", handleAgentLogin);
+    if (!ownerPassword) {
+      authSection.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Create Owner Password</h3><p class="text-gray-600 mb-4">Create a secure password to manage agents and sensitive actions. This will be the master password.</p><form id="owner-signup-form" class="space-y-4"><input type="password" id="new-owner-password" placeholder="Enter new password" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="password" id="confirm-owner-password" placeholder="Confirm new password" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Create Password</button></form></div>`;
+      document
+        .getElementById("owner-signup-form")
+        .addEventListener("submit", handleOwnerSignup);
+    } else if (!loggedInUser) {
+      authSection.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Agent Login</h3><form id="agent-login-form" class="space-y-4"><input type="text" id="agent-name-input" placeholder="Agent Name (or 'owner')" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="password" id="agent-password-input" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Login</button></form></div>`;
+      document
+        .getElementById("agent-login-form")
+        .addEventListener("submit", handleAgentLogin);
     } else {
-        authSection.classList.add("hidden");
-        agentContent.classList.remove("hidden");
-        
-        populateAgentSelectors();
+      authSection.classList.add("hidden");
+      agentContent.classList.remove("hidden");
 
-        const addAgentForm = document.getElementById("add-agent-form");
-        if (addAgentForm) {
-            // Admin-only elements
-            addAgentForm.addEventListener("submit", handleAddAgent);
-            document.getElementById("download-agent-report-btn").addEventListener("click", handleDownloadAgentReport);
-            const storeList = agentContent.querySelector("#agent-store-list");
-            storeList.addEventListener("change", (event) => {
-                if (event.target.type === "checkbox") {
-                    const storeName = event.target.value;
-                    const commissionInput = storeList.querySelector(`input[name="commission_${storeName}"]`);
-                    commissionInput.disabled = !event.target.checked;
-                    if (!event.target.checked) commissionInput.value = "";
-                }
-            });
-            renderAgents();
-            
-            // New form listeners
-            document.getElementById("update-pending-form").addEventListener("submit", handleUpdatePendingCommission);
-            document.getElementById("update-paid-form").addEventListener("submit", handleUpdatePaidCommission);
-        }
+      populateAgentSelectors();
 
-        document.getElementById("agent-logout-btn").addEventListener("click", handleAgentLogout);
+      const addAgentForm = document.getElementById("add-agent-form");
+      if (addAgentForm) {
+        addAgentForm.addEventListener("submit", handleAddAgent);
+        document
+          .getElementById("download-agent-report-btn")
+          .addEventListener("click", handleDownloadAgentReport);
+        const storeList = agentContent.querySelector("#agent-store-list");
+        storeList.addEventListener("change", (event) => {
+          if (event.target.type === "checkbox") {
+            const storeName = event.target.value;
+            const commissionInput = storeList.querySelector(
+              `input[name="commission_${storeName}"]`
+            );
+            commissionInput.disabled = !event.target.checked;
+            if (!event.target.checked) commissionInput.value = "";
+          }
+        });
+        renderAgents();
 
-        renderPendingCommissions();
-        renderPaidCommissions();
+        document.getElementById("update-pending-form").addEventListener("submit", handleUpdatePendingCommission);
+        document.getElementById("update-paid-form").addEventListener("submit", handleUpdatePaidCommission);
+      }
+
+      document
+        .getElementById("agent-logout-btn")
+        .addEventListener("click", handleAgentLogout);
+
+      renderPendingCommissions();
+      renderPaidCommissions();
     }
-}
-
+  }
 
   function bindPaymentListeners() {
     document
@@ -545,17 +577,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const transportSelectName = document.getElementById("transport-select-name");
     transportSelectName.addEventListener("change", () => {
-        const downloadButton = document.getElementById("download-transport-btn");
-        if (transportSelectName.value === 'all') {
-            downloadButton.textContent = "Download All";
-        } else {
-            downloadButton.textContent = "Download Report";
-        }
+      const downloadButton = document.getElementById("download-transport-btn");
+      if (transportSelectName.value === "all") {
+        downloadButton.textContent = "Download Delivery Challan";
+      } else {
+        downloadButton.textContent = "Download Delivery Challan";
+      }
+      const storeDetailsButton = document.getElementById(
+        "download-store-details-btn"
+      );
+      if (transportSelectName.value === "all") {
+        storeDetailsButton.textContent = "Download All Store Challan";
+      } else {
+        storeDetailsButton.textContent = "Download Store Challan";
+      }
     });
 
     document
       .getElementById("download-transport-btn")
       .addEventListener("click", handleDownloadTransportationExcel);
+    document
+      .getElementById("download-store-details-btn")
+      .addEventListener("click", handleDownloadTransportStoreDetails);
     renderTransportationPage();
   }
 
@@ -760,7 +803,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     if (!commissionTableBody) return;
     const agentCommissions = pendingCommissions.filter(
-      (c) => c.agentName === loggedInAgentName
+      (c) => loggedInUser === 'owner' || c.agentName === loggedInUser.agentName
     );
     commissionTableBody.innerHTML =
       agentCommissions
@@ -770,9 +813,8 @@ document.addEventListener("DOMContentLoaded", function () {
             <td class="p-4">${new Date(c.date).toLocaleDateString()}</td>
             <td class="p-4">${c.storeName}</td>
             <td class="p-4 font-semibold">₹${c.commissionAmount.toFixed(2)}</td>
-            <td class="p-4"><button class="text-green-600 hover:text-green-800 font-semibold" onclick="payCommission(${index})">Pay</button></td>
-        </tr>
-      `
+            <td class="p-4"><button class="text-green-600 hover:text-green-800 font-semibold" onclick="payCommission('${c.orderId}')">Pay</button></td>
+        </tr>`
         )
         .reverse()
         .join("") ||
@@ -785,7 +827,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     if (!commissionTableBody) return;
     const agentCommissions = paidCommissions.filter(
-      (c) => c.agentName === loggedInAgentName
+      (c) => loggedInUser === 'owner' || c.agentName === loggedInUser.agentName
     );
     commissionTableBody.innerHTML =
       agentCommissions
@@ -797,8 +839,7 @@ document.addEventListener("DOMContentLoaded", function () {
               <td class="p-4 font-semibold">₹${c.commissionAmount.toFixed(
                 2
               )}</td>
-          </tr>
-        `
+          </tr>`
         )
         .reverse()
         .join("") ||
@@ -806,32 +847,35 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   const renderTransportationPage = () => {
-    const transportationTableBody = document.getElementById("transportation-table-body");
+    const transportationTableBody = document.getElementById(
+      "transportation-table-body"
+    );
     const transportSelectName = document.getElementById("transport-select-name");
-    
+
     // Populate the dropdown with unique transporter names
-    const transporters = [...new Set(transportation.map(t => t.transportationName))];
-    transportSelectName.innerHTML = `<option value="all">All Transporters</option>` +
-        transporters.map(name => `<option value="${name}">${name}</option>`).join('');
+    const transporters = [...new Set(transportation.map((t) => t.transportationName))];
+    transportSelectName.innerHTML =
+      `<option value="all">All Transporters</option>` +
+      transporters.map((name) => `<option value="${name}">${name}</option>`).join("");
 
     // Render the main transportation table as before
     if (!transportationTableBody) return;
     transportationTableBody.innerHTML =
-        transportation
-            .map(
-                (item, index) => `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-4">${new Date(item.date).toLocaleDateString()}</td>
-                    <td class="p-4 font-medium">${item.transportationName}</td>
-                    <td class="p-4 text-sm">${item.stores.join(", ")}</td>
-                    <td class="p-4 space-x-2">
-                        <button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openEditTransportationModal(${index})">Edit</button>
-                        <button class="text-red-500 hover:text-red-700 font-semibold" onclick="removeTransportation(${index})">Delete</button>
-                    </td>
-                </tr>`
-            )
-            .join("") ||
-        `<tr><td colspan="4" class="text-center p-4 text-gray-500">No transportation assigned yet.</td></tr>`;
+      transportation
+        .map(
+          (item, index) => `
+            <tr class="hover:bg-gray-50">
+                <td class="p-4">${new Date(item.date).toLocaleDateString()}</td>
+                <td class="p-4 font-medium">${item.transportationName}</td>
+                <td class="p-4 text-sm">${item.stores.join(", ")}</td>
+                <td class="p-4 space-x-2">
+                    <button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openEditTransportationModal(${index})">Edit</button>
+                    <button class="text-red-500 hover:text-red-700 font-semibold" onclick="removeTransportation(${index})">Delete</button>
+                </td>
+            </tr>`
+        )
+        .join("") ||
+      `<tr><td colspan="4" class="text-center p-4 text-gray-500">No transportation assigned yet.</td></tr>`;
   };
 
   const renderPaymentsPage = () => {
@@ -879,13 +923,14 @@ document.addEventListener("DOMContentLoaded", function () {
         <tr class="hover:bg-gray-50">
             <td class="p-4">${new Date(payment.date).toLocaleString()}</td>
             <td class="p-4 font-medium">${payment.storeName}</td>
-            <td class="p-4 font-semibold">₹${payment.amount.toFixed(2)}</td>
-            <td class="p-4">${payment.paymentMethod}</td>
+            <td class="p-4">₹${(payment.cashAmount || 0).toFixed(2)}</td>
+            <td class="p-4">₹${(payment.onlineAmount || 0).toFixed(2)}</td>
+            <td class="p-4 font-semibold">₹${((payment.cashAmount || 0) + (payment.onlineAmount || 0)).toFixed(2)}</td>
             <td class="p-4"><button class="text-red-500 hover:text-red-700 font-semibold" onclick="removePayment(${index})">Delete</button></td>
         </tr>`
           )
           .join("")
-      : `<tr><td colspan="5" class="text-center p-4 text-gray-500">No payments recorded yet.</td></tr>`;
+      : `<tr><td colspan="6" class="text-center p-4 text-gray-500">No payments recorded yet.</td></tr>`;
   };
 
   // --- HANDLER FUNCTIONS ---
@@ -1000,16 +1045,18 @@ document.addEventListener("DOMContentLoaded", function () {
       return true;
     });
 
-    const cashPaid = relevantPayments
-      .filter((p) => (p.paymentMethod || "").toLowerCase() === "cash")
-      .reduce((sum, p) => sum + p.amount, 0);
-    const onlinePaid = relevantPayments
-      .filter((p) => (p.paymentMethod || "").toLowerCase() === "online")
-      .reduce((sum, p) => sum + p.amount, 0);
+    const cashPaid = relevantPayments.reduce(
+      (sum, p) => sum + (p.cashAmount || 0),
+      0
+    );
+    const onlinePaid = relevantPayments.reduce(
+      (sum, p) => sum + (p.onlineAmount || 0),
+      0
+    );
 
     const totalPaidAllTime = payments
       .filter((p) => p.storeName === storeName)
-      .reduce((sum, p) => sum + p.amount, 0);
+      .reduce((sum, p) => sum + (p.cashAmount || 0) + (p.onlineAmount || 0), 0);
     const dueAmount = calculateDue(storeName);
 
     let dateTitle = "for All Time";
@@ -1072,11 +1119,11 @@ document.addEventListener("DOMContentLoaded", function () {
               })
               .join("")}
             <div class="border-t mt-8 pt-4">
-                  <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary (${dateTitle})</h3>
-                  <div class="text-right space-y-1">
-                    <p>Paid by Cash: ₹${cashPaid.toFixed(2)}</p>
-                    <p>Paid by Online: ₹${onlinePaid.toFixed(2)}</p>
-                </div>
+                    <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary (${dateTitle})</h3>
+                    <div class="text-right space-y-1">
+                      <p>Paid by Cash: ₹${cashPaid.toFixed(2)}</p>
+                      <p>Paid by Online: ₹${onlinePaid.toFixed(2)}</p>
+                  </div>
             </div>
             <div class="border-t mt-8 pt-4 text-right">
                 <p class="text-lg">Total Paid (All Time): ₹${totalPaidAllTime.toFixed(
@@ -1098,6 +1145,7 @@ document.addEventListener("DOMContentLoaded", function () {
     e.preventDefault();
     const formData = new FormData(e.target);
     const agentName = formData.get("agentName");
+    const agentPassword = formData.get("agentPassword");
     const selectedStores = formData.getAll("selected_stores");
     const commissions = {};
 
@@ -1106,9 +1154,9 @@ document.addEventListener("DOMContentLoaded", function () {
       if (commissionValue) commissions[storeName] = parseFloat(commissionValue);
     });
 
-    if (!agentName || Object.keys(commissions).length === 0) {
+    if (!agentName || !agentPassword || Object.keys(commissions).length === 0) {
       alert(
-        "Please provide agent name and at least one store with commission."
+        "Please provide agent name, password, and at least one store with commission."
       );
       return;
     }
@@ -1117,8 +1165,9 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     if (existingAgentIndex > -1) {
       agents[existingAgentIndex].commissions = commissions;
+      agents[existingAgentIndex].agentPassword = agentPassword;
     } else {
-      agents.push({ agentName, commissions });
+      agents.push({ agentName, agentPassword, commissions });
     }
 
     saveData();
@@ -1135,6 +1184,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const formData = new FormData(e.target);
     const transportationName = formData.get("transportationName");
     const selectedStores = formData.getAll("transport_stores");
+    const deliveryShopCode = formData.get("deliveryShopCode");
+    const deliveryShopPhone = formData.get("deliveryShopPhone");
 
     if (!transportationName || selectedStores.length === 0) {
       alert("Please provide a name and select at least one store.");
@@ -1145,6 +1196,8 @@ document.addEventListener("DOMContentLoaded", function () {
       date: new Date().toISOString(),
       transportationName,
       stores: selectedStores,
+      deliveryShopCode: deliveryShopCode || "",
+      deliveryShopPhone: deliveryShopPhone || "",
     });
     saveData();
     renderTransportationPage();
@@ -1155,12 +1208,12 @@ document.addEventListener("DOMContentLoaded", function () {
     e.preventDefault();
     const formData = new FormData(e.target);
     const storeName = document.getElementById("payment-store-select").value;
-    const amount = parseFloat(formData.get("amount"));
-    const paymentMethod = formData.get("paymentMethod");
+    const cashAmount = parseFloat(formData.get("cashAmount")) || 0;
+    const onlineAmount = parseFloat(formData.get("onlineAmount")) || 0;
 
-    if (!storeName || !amount || !paymentMethod) {
+    if (!storeName || (cashAmount === 0 && onlineAmount === 0)) {
       alert(
-        "Please select a store, enter a valid amount, and specify payment method."
+        "Please select a store and enter a valid amount for either cash or online."
       );
       return;
     }
@@ -1168,8 +1221,8 @@ document.addEventListener("DOMContentLoaded", function () {
     payments.push({
       date: new Date().toISOString(),
       storeName,
-      amount,
-      paymentMethod,
+      cashAmount,
+      onlineAmount,
     });
 
     saveData();
@@ -1263,12 +1316,9 @@ document.addEventListener("DOMContentLoaded", function () {
     e.target.reset();
   }
 
-
   // --- DOWNLOAD & EXCEL FUNCTIONS ---
-  function handleDownloadProductQuantityExcel() {
-    const startDate = document.getElementById(
-      "order-download-start-date"
-    ).value;
+  function handleDownloadOrdersExcel() {
+    const startDate = document.getElementById("order-download-start-date").value;
     const endDate = document.getElementById("order-download-end-date").value;
 
     if (!startDate || !endDate) {
@@ -1286,256 +1336,297 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const storeNames = [
-      ...new Set(filteredOrders.map((o) => o.storeName)),
-    ].sort();
-    const productNames = [
-      ...new Set(products.map((p) => p.productName)),
-    ].sort();
-
-    if (storeNames.length === 0) {
-      alert("No stores have placed any orders in the selected date range.");
-      return;
-    }
-
-    const quantityMap = {};
+    const reportData = [];
     filteredOrders.forEach((order) => {
-      if (!quantityMap[order.storeName]) {
-        quantityMap[order.storeName] = {};
-      }
+      const orderDate = new Date(order.date).toLocaleDateString();
       order.items.forEach((item) => {
-        quantityMap[order.storeName][item.productName] =
-          (quantityMap[order.storeName][item.productName] || 0) + item.quantity;
+        reportData.push({
+          "Order Date": orderDate,
+          "Store Name": order.storeName,
+          "Customer Name": order.customerName,
+          "Item": item.productName,
+          "Quantity": item.quantity,
+          "Unit Price (₹)": item.price,
+          "Total Price (₹)": (item.quantity * item.price).toFixed(2),
+        });
       });
     });
 
-    const worksheetData = [];
-    const headerRow = {
-      productName: "Product Name",
-      ...storeNames.reduce((acc, name) => ({ ...acc, [name]: name }), {}),
-      total: "Total",
-    };
-    worksheetData.push(headerRow);
-
-    productNames.forEach((pName) => {
-      const row = { productName: pName };
-      let productTotal = 0;
-      storeNames.forEach((sName) => {
-        const qty = quantityMap[sName]?.[pName] || 0;
-        row[sName] = qty;
-        productTotal += qty;
-      });
-      row.total = productTotal;
-      worksheetData.push(row);
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData, {
-      skipHeader: true,
-    });
-
-    const boldStyle = { font: { bold: true } };
-    const allCells = XLSX.utils.decode_range(worksheet["!ref"]);
-
-    for (let C = allCells.s.c; C <= allCells.e.c; ++C) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
-      if (worksheet[cellAddress]) worksheet[cellAddress].s = boldStyle;
-    }
-
-    for (let R = allCells.s.r; R <= allCells.e.r; ++R) {
-      const cellAddress = XLSX.utils.encode_cell({ r: R, c: 0 });
-      if (worksheet[cellAddress]) worksheet[cellAddress].s = boldStyle;
-    }
-
-    XLSX.utils.sheet_add_aoa(worksheet, [Object.values(headerRow)], {
-      origin: "A1",
-    });
-
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      "Product Quantity Summary"
-    );
-    XLSX.writeFile(
-      workbook,
-      `Product_Quantity_${startDate}_to_${endDate}.xlsx`
-    );
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Order Details");
+
+    const fileName = `Order_Report_${startDate}_to_${endDate}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   }
 
+  // FIX: This function was not correctly generating the Excel file.
   function handleDownloadPaymentsReport() {
-    const startDate = document.getElementById(
-      "payment-download-start-date"
-    ).value;
+    const startDate = document.getElementById("payment-download-start-date").value;
     const endDate = document.getElementById("payment-download-end-date").value;
+    const storeFilter = document.getElementById("payment-download-store-select").value;
+
     if (!startDate || !endDate) {
-      alert("Please select a start and end date for the ledger report.");
-      return;
+        alert("Please select a start and end date for the ledger report.");
+        return;
     }
     if (startDate > endDate) {
-      alert("Start date cannot be after end date.");
-      return;
+        alert("Start date cannot be after end date.");
+        return;
     }
 
-    const storeFilter = document.getElementById(
-      "payment-download-store-select"
-    ).value;
-
-    const allStoresInvolved = [
-      ...new Set([
+    const allStoresInvolved = [...new Set([
         ...orders.map((o) => o.storeName),
         ...payments.map((p) => p.storeName),
-      ]),
-    ].sort();
+    ])].sort();
 
-    const storesToProcess =
-      storeFilter === "all" ? allStoresInvolved : [storeFilter];
+    const storesToProcess = storeFilter === "all" ? allStoresInvolved : [storeFilter];
 
     if (storesToProcess.length === 0) {
-      alert("No stores have any records to generate a report.");
-      return;
+        alert("No stores have any records to generate a report.");
+        return;
     }
 
     const reportData = [];
 
     for (const storeName of storesToProcess) {
-      const totalOrderedBefore = orders
-        .filter(
-          (o) => o.storeName === storeName && o.date.slice(0, 10) < startDate
-        )
-        .reduce((sum, o) => sum + o.total, 0);
+        const totalOrderedBefore = orders
+            .filter((o) => o.storeName === storeName && o.date.slice(0, 10) < startDate)
+            .reduce((sum, o) => sum + o.total, 0);
 
-      const totalPaidBefore = payments
-        .filter(
-          (p) => p.storeName === storeName && p.date.slice(0, 10) < startDate
-        )
-        .reduce((sum, p) => sum + p.amount, 0);
+        const totalPaidBefore = payments
+            .filter((p) => p.storeName === storeName && p.date.slice(0, 10) < startDate)
+            .reduce((sum, p) => sum + (p.cashAmount || 0) + (p.onlineAmount || 0), 0);
 
-      const dueBeforePeriod = totalOrderedBefore - totalPaidBefore;
+        const dueBeforePeriod = totalOrderedBefore - totalPaidBefore;
 
-      const billInPeriod = orders
-        .filter(
-          (o) =>
-            o.storeName === storeName &&
-            o.date.slice(0, 10) >= startDate &&
-            o.date.slice(0, 10) <= endDate
-        )
-        .reduce((sum, o) => sum + o.total, 0);
+        const billInPeriod = orders
+            .filter((o) =>
+                o.storeName === storeName &&
+                o.date.slice(0, 10) >= startDate &&
+                o.date.slice(0, 10) <= endDate
+            )
+            .reduce((sum, o) => sum + o.total, 0);
 
-      const paymentsInPeriod = payments.filter(
-        (p) =>
-          p.storeName === storeName &&
-          p.date.slice(0, 10) >= startDate &&
-          p.date.slice(0, 10) <= endDate
-      );
-      const cashPaymentInPeriod = paymentsInPeriod
-        .filter((p) => (p.paymentMethod || "").toLowerCase() === "cash")
-        .reduce((sum, p) => sum + p.amount, 0);
-      const onlinePaymentInPeriod = paymentsInPeriod
-        .filter((p) => (p.paymentMethod || "").toLowerCase() === "online")
-        .reduce((sum, p) => sum + p.amount, 0);
+        const paymentsInPeriod = payments.filter(
+            (p) =>
+                p.storeName === storeName &&
+                p.date.slice(0, 10) >= startDate &&
+                p.date.slice(0, 10) <= endDate
+        );
 
-      const finalDue =
-        dueBeforePeriod +
-        billInPeriod -
-        cashPaymentInPeriod -
-        onlinePaymentInPeriod;
+        const cashPaymentInPeriod = paymentsInPeriod.reduce((sum, p) => sum + (p.cashAmount || 0), 0);
+        const onlinePaymentInPeriod = paymentsInPeriod.reduce((sum, p) => sum + (p.onlineAmount || 0), 0);
 
-      // Only add to report if there's any activity
-      if (
-        dueBeforePeriod !== 0 ||
-        billInPeriod !== 0 ||
-        cashPaymentInPeriod !== 0 ||
-        onlinePaymentInPeriod !== 0
-      ) {
-        reportData.push([
-          storeName,
-          billInPeriod,
-          dueBeforePeriod,
-          cashPaymentInPeriod,
-          onlinePaymentInPeriod,
-          finalDue,
-        ]);
-      }
+        const finalDue =
+            (dueBeforePeriod || 0) +
+            (billInPeriod || 0) -
+            (cashPaymentInPeriod || 0) -
+            (onlinePaymentInPeriod || 0);
+
+        if (
+            dueBeforePeriod !== 0 ||
+            billInPeriod !== 0 ||
+            cashPaymentInPeriod !== 0 ||
+            onlinePaymentInPeriod !== 0
+        ) {
+            reportData.push({
+                "Shop": storeName,
+                "Bill in Period (₹)": billInPeriod.toFixed(2),
+                "Due before Period (₹)": dueBeforePeriod.toFixed(2),
+                "Payment Cash (₹)": cashPaymentInPeriod.toFixed(2),
+                "Payment Online (₹)": onlinePaymentInPeriod.toFixed(2),
+                "Final Due (₹)": finalDue.toFixed(2)
+            });
+        }
     }
 
     if (reportData.length === 0) {
-      alert(
-        "No transaction data found for the selected stores in the specified date range."
-      );
-      return;
+        alert("No transaction data found for the selected stores in the specified date range.");
+        return;
     }
 
-    const worksheetData = [
-      ["Shop", "Bill in Period", "Due before Period", "Payment", null, "Due"],
-      [null, null, null, "Cash", "Online", null],
-      ...reportData.map((row) =>
-        row.map((cell) => (typeof cell === "number" && cell === 0 ? "" : cell))
-      ),
-    ];
-
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-
-    const merges = [
-      { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } },
-      { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } },
-      { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } },
-      { s: { r: 0, c: 3 }, e: { r: 0, c: 4 } },
-      { s: { r: 0, c: 5 }, e: { r: 1, c: 5 } },
-    ];
-    worksheet["!merges"] = merges;
-
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      `Ledger for ${startDate} to ${endDate}`
-    );
-    XLSX.writeFile(workbook, `Ledger_Report_${startDate}_to_${endDate}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, `Ledger Report`);
+
+    const fileName = `Ledger_Report_${startDate}_to_${endDate}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   }
 
   function handleDownloadTransportationExcel() {
     const startDate = document.getElementById(
-        "transport-download-start-date"
+      "transport-download-start-date"
     ).value;
-    const endDate = document.getElementById(
-        "transport-download-end-date"
-    ).value;
+    const endDate = document.getElementById("transport-download-end-date").value;
     const selectedTransporter = document.getElementById("transport-select-name").value;
 
     if (!startDate && !endDate) {
-        alert("Please select a date or date range to download the report.");
-        return;
+      alert("Please select a date or date range for the report.");
+      return;
     }
-    
-    // Filter data based on selected transporter and date range
-    let filteredData = transportation.filter((item) => {
-        const itemDate = item.date.slice(0, 10);
-        const dateInRange = (!startDate || itemDate >= startDate) && (!endDate || itemDate <= endDate);
-        const isSelectedTransporter = selectedTransporter === "all" || item.transportationName === selectedTransporter;
-        return dateInRange && isSelectedTransporter;
+
+    // Get transportation assignments for the selected period
+    let relevantTransports = transportation.filter((t) => {
+      const transportDate = t.date.slice(0, 10);
+      return transportDate >= startDate && transportDate <= endDate;
     });
 
-    if (filteredData.length === 0) {
-        alert(`No transportation data found for the selected criteria.`);
-        return;
+    // If a specific transporter is selected, filter further
+    if (selectedTransporter !== "all") {
+      relevantTransports = relevantTransports.filter(
+        (t) => t.transportationName === selectedTransporter
+      );
     }
 
-    const worksheetData = filteredData.map((item) => ({
-        Date: new Date(item.date).toLocaleDateString(),
-        "Transportation Name": item.transportationName,
-        "Assigned Stores": item.stores.join(", "),
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    if (relevantTransports.length === 0) {
+      alert("No transportation assignments found for the selected criteria.");
+      return;
+    }
+
+    // Aggregate all orders and their items for the relevant stores and date range
+    const allOrdersInDateRange = orders.filter((o) => {
+      const orderDate = o.date.slice(0, 10);
+      return orderDate >= startDate && orderDate <= endDate;
+    });
+
+    // Get all unique product names to create the row headers
+    const allProductNames = [...new Set(products.map((p) => p.productName))].sort();
+
+    // Get all unique store names from the relevant transports for column headers
+    const storeNames = [
+      ...new Set(relevantTransports.flatMap((t) => t.stores)),
+    ].sort();
+
+    // Map to store quantities: { "Item Name": { "Shop 1": qty, "Shop 2": qty } }
+    const quantityMap = {};
+    allProductNames.forEach((pName) => {
+      quantityMap[pName] = {};
+      storeNames.forEach((sName) => {
+        quantityMap[pName][sName] = ""; // Initialize with empty string
+      });
+    });
+
+    allOrdersInDateRange.forEach((order) => {
+      if (storeNames.includes(order.storeName)) {
+        order.items.forEach((item) => {
+          if (allProductNames.includes(item.productName)) {
+            if (quantityMap[item.productName][order.storeName]) {
+              quantityMap[item.productName][order.storeName] += item.quantity;
+            } else {
+              quantityMap[item.productName][order.storeName] = item.quantity;
+            }
+          }
+        });
+      }
+    });
+
+    // Convert the map to an array of objects for XLSX
+    const worksheetData = [];
+
+    // Add main report heading
+    worksheetData.push([
+      `Delivery Challan for ${
+        selectedTransporter !== "all" ? selectedTransporter : "All Transporters"
+      }`,
+    ]);
+    worksheetData.push([]); // Empty row for spacing
+
+    // Create a new header row for Items and Store Names
+    const headerRow = ["Item"];
+    storeNames.forEach((sName) => {
+      headerRow.push(sName);
+    });
+    worksheetData.push(headerRow);
+
+    // Add data rows
+    allProductNames.forEach((pName) => {
+      const row = [pName];
+      storeNames.forEach((sName) => {
+        row.push(quantityMap[pName][sName] || "-");
+      });
+      worksheetData.push(row);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Transportation Report");
-    
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Delivery Challan");
+
     const dateString = startDate
-        ? `${startDate}_to_${endDate || "today"}`
-        : `until_${endDate}`;
-    const fileName = selectedTransporter === "all" 
-        ? `Transportation_Report_${dateString}.xlsx`
-        : `Transportation_Report_${selectedTransporter}_${dateString}.xlsx`;
-    
+      ? `${startDate}_to_${endDate || "today"}`
+      : `until_${endDate}`;
+    const fileName = `Delivery_Challan_${
+      selectedTransporter !== "all" ? selectedTransporter + "_" : ""
+    }${dateString}.xlsx`;
+
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  function handleDownloadTransportStoreDetails() {
+    const startDate = document.getElementById(
+      "transport-download-start-date"
+    ).value;
+    const endDate = document.getElementById("transport-download-end-date").value;
+    const selectedTransporter = document.getElementById("transport-select-name").value;
+
+    if (selectedTransporter === "all") {
+      alert("Please select a specific transporter to download store details.");
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      alert("Please select a date or date range for the report.");
+      return;
+    }
+
+    let relevantTransports = transportation.filter((t) => {
+      const transportDate = t.date.slice(0, 10);
+      return (
+        transportDate >= startDate &&
+        transportDate <= endDate &&
+        t.transportationName === selectedTransporter
+      );
+    });
+
+    if (relevantTransports.length === 0) {
+      alert("No transportation assignments found for the selected criteria.");
+      return;
+    }
+
+    const assignedStores = [
+      ...new Set(relevantTransports.flatMap((t) => t.stores)),
+    ];
+
+    const storeDetailsData = [];
+    assignedStores.forEach((storeName) => {
+      const store = stores.find((s) => s.storeName === storeName);
+      const transport = relevantTransports.find((t) =>
+        t.stores.includes(storeName)
+      );
+      if (store && transport) {
+        storeDetailsData.push({
+          "Store/Counter Name": store.storeName,
+          "Code": store.details,
+          "Phone Number": transport.deliveryShopPhone,
+        });
+      }
+    });
+
+    if (storeDetailsData.length === 0) {
+      alert("No store details found for the selected criteria.");
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(storeDetailsData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Store Challan");
+
+    const dateString = startDate
+      ? `${startDate}_to_${endDate || "today"}`
+      : `until_${endDate}`;
+    const fileName = `Store_Challan_${selectedTransporter}_${dateString}.xlsx`;
+
     XLSX.writeFile(workbook, fileName);
   }
 
@@ -1549,28 +1640,33 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const commissionsInRange = pendingCommissions.filter(c => {
+    const commissionsInRange = pendingCommissions.filter((c) => {
       const commissionDate = c.date.slice(0, 10);
       return commissionDate >= startDate && commissionDate <= endDate;
     });
 
     let agentsToReport = agents;
-    if (selectedAgent !== 'all') {
-      agentsToReport = agents.filter(a => a.agentName === selectedAgent);
-      if (selectedAgent === 'admin') {
-        agentsToReport.push({ agentName: 'admin', commissions: {} });
+    if (selectedAgent !== "all") {
+      agentsToReport = agents.filter((a) => a.agentName === selectedAgent);
+      if (selectedAgent === "owner") {
+        agentsToReport.push({ agentName: "owner", commissions: {} });
       }
     }
-    
+
     const reportData = [];
-    agentsToReport.forEach(agent => {
-      const agentCommissions = commissionsInRange.filter(c => c.agentName === agent.agentName);
+    agentsToReport.forEach((agent) => {
+      const agentCommissions = commissionsInRange.filter(
+        (c) => c.agentName === agent.agentName
+      );
       if (agentCommissions.length > 0) {
-        const totalCommission = agentCommissions.reduce((sum, c) => sum + c.commissionAmount, 0);
+        const totalCommission = agentCommissions.reduce(
+          (sum, c) => sum + c.commissionAmount,
+          0
+        );
         reportData.push({
           "Agent Name": agent.agentName,
           "Total Commission (₹)": totalCommission.toFixed(2),
-          "Number of Orders": agentCommissions.length
+          "Number of Orders": agentCommissions.length,
         });
       }
     });
@@ -1579,24 +1675,25 @@ document.addEventListener("DOMContentLoaded", function () {
       alert(`No agent commission data found for the selected criteria.`);
       return;
     }
-    
+
     const worksheet = XLSX.utils.json_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Agent Commission Report");
-    
-    const fileName = selectedAgent === 'all'
-      ? `Agent_Commission_Report_${startDate}_to_${endDate}.xlsx`
-      : `Agent_Commission_Report_${selectedAgent}_${startDate}_to_${endDate}.xlsx`;
+
+    const fileName =
+      selectedAgent === "all"
+        ? `Agent_Commission_Report_${startDate}_to_${endDate}.xlsx`
+        : `Agent_Commission_Report_${selectedAgent}_${startDate}_to_${endDate}.xlsx`;
 
     XLSX.writeFile(workbook, fileName);
   }
 
   // --- PASSWORD & AUTH LOGIC ---
-  function handleAgentSignup(e) {
+  function handleOwnerSignup(e) {
     e.preventDefault();
-    const newPassword = document.getElementById("new-agent-password").value;
+    const newPassword = document.getElementById("new-owner-password").value;
     const confirmPassword = document.getElementById(
-      "confirm-agent-password"
+      "confirm-owner-password"
     ).value;
     if (newPassword.length < 4) {
       alert("Password must be at least 4 characters long.");
@@ -1606,49 +1703,53 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("Passwords do not match.");
       return;
     }
-    agentPassword = newPassword;
-    isAgentLoggedIn = true;
-    loggedInAgentName = "admin";
+    ownerPassword = newPassword;
+    loggedInUser = 'owner';
     saveData();
     renderPage("agent");
   }
 
   function handleAgentLogin(e) {
     e.preventDefault();
-    const name = document
-      .getElementById("agent-name-input")
-      .value.toLowerCase();
+    const name = document.getElementById("agent-name-input").value;
     const password = document.getElementById("agent-password-input").value;
 
-    const agentExists = agents.some(
-      (agent) => agent.agentName.toLowerCase() === name
-    );
+    // Owner login
+    if (name.toLowerCase() === 'owner') {
+      if (password === ownerPassword) {
+        loggedInUser = 'owner';
+        renderPage('agent');
+      } else {
+        alert("Incorrect owner password.");
+      }
+      return;
+    }
 
-    if (password === agentPassword && (name === "admin" || agentExists)) {
-      isAgentLoggedIn = true;
-      loggedInAgentName = name;
-      renderPage("agent");
+    // Agent login
+    const agent = agents.find(a => a.agentName === name);
+    if (agent && agent.agentPassword === password) {
+      loggedInUser = agent;
+      renderPage('agent');
     } else {
       alert("Incorrect agent name or password.");
     }
   }
 
   function handleAgentLogout() {
-    isAgentLoggedIn = false;
-    loggedInAgentName = "";
+    loggedInUser = null;
     renderPage("agent");
   }
 
   const promptForPassword = (callback, message) => {
-    if (!agentPassword) {
+    if (!ownerPassword) {
       alert(
-        "Please set up an admin password first in the Agent Management section."
+        "Please set up an owner password first in the Agent Management section."
       );
       return;
     }
     passwordCallback = callback;
     document.getElementById("password-prompt-message").textContent =
-      message || "Please enter the admin password to proceed.";
+      message || "Please enter the owner password to proceed.";
     passwordModal.classList.remove("hidden");
     document.getElementById("password-input").focus();
   };
@@ -1656,7 +1757,7 @@ document.addEventListener("DOMContentLoaded", function () {
   passwordForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const password = document.getElementById("password-input").value;
-    if (password === agentPassword) {
+    if (password === ownerPassword) {
       passwordModal.classList.add("hidden");
       passwordError.classList.add("hidden");
       document.getElementById("password-input").value = "";
@@ -1713,17 +1814,21 @@ document.addEventListener("DOMContentLoaded", function () {
       storeListContainer.innerHTML = stores
         .map(
           (store) => `
-                    <label class="flex items-center">
-                        <input type="checkbox" name="edit_transport_stores" value="${
-                          store.storeName
-                        }" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" ${
-            item.stores.includes(store.storeName) ? "checked" : ""
-          }>
-                        <span class="ml-3 text-gray-700">${store.storeName}</span>
-                    </label>
-                `
+            <label class="flex items-center">
+                <input type="checkbox" name="edit_transport_stores" value="${
+                  store.storeName
+                }" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" ${
+                  item.stores.includes(store.storeName) ? "checked" : ""
+                }>
+                <span class="ml-3 text-gray-700">${store.storeName}</span>
+            </label>
+        `
         )
         .join("");
+      document.getElementById("edit-deliveryShopCode").value =
+        item.deliveryShopCode || "";
+      document.getElementById("edit-deliveryShopPhone").value =
+        item.deliveryShopPhone || "";
       editTransportationModal.classList.remove("hidden");
     }, `Enter password to edit assignment for: ${transportation[index].transportationName}`);
   };
@@ -1768,6 +1873,8 @@ document.addEventListener("DOMContentLoaded", function () {
         'input[name="edit_transport_stores"]:checked'
       ),
     ].map((el) => el.value);
+    const deliveryShopCode = document.getElementById("edit-deliveryShopCode").value;
+    const deliveryShopPhone = document.getElementById("edit-deliveryShopPhone").value;
 
     if (!transportationName || selectedStores.length === 0) {
       alert("Please provide a name and select at least one store.");
@@ -1778,6 +1885,8 @@ document.addEventListener("DOMContentLoaded", function () {
       ...transportation[index],
       transportationName,
       stores: selectedStores,
+      deliveryShopCode: deliveryShopCode || "",
+      deliveryShopPhone: deliveryShopPhone || "",
     };
     saveData();
     renderTransportationPage();
@@ -1808,7 +1917,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const totalOrderedValue = calculateTotalOrdered(storeName);
     const totalPaid = payments
       .filter((p) => p.storeName === storeName)
-      .reduce((sum, p) => sum + p.amount, 0);
+      .reduce(
+        (sum, p) => sum + (p.cashAmount || 0) + (p.onlineAmount || 0),
+        0
+      );
     return totalOrderedValue - totalPaid;
   };
 
@@ -1899,23 +2011,35 @@ document.addEventListener("DOMContentLoaded", function () {
       payments.splice(index, 1);
       saveData();
       renderPaymentHistory();
-    }, `Enter password to delete payment of ₹${payment.amount} for ${payment.storeName}`);
+    }, `Enter password to delete payment of ₹${(payment.cashAmount + payment.onlineAmount).toFixed(2)} for ${payment.storeName}`);
   };
 
-  window.payCommission = (commissionIndex) => {
-      const commissionToPay = pendingCommissions.filter(c => c.agentName === loggedInAgentName)[commissionIndex];
+  window.payCommission = (orderId) => {
+    if (loggedInUser !== 'owner') {
+      alert("Only the owner can pay commissions.");
+      return;
+    }
+
+    const commissionToPay = pendingCommissions.find(c => c.orderId === orderId);
+    if (!commissionToPay) {
+      alert("Commission not found.");
+      return;
+    }
+
+    promptForPassword(() => {
       const globalIndex = pendingCommissions.findIndex(c => c.orderId === commissionToPay.orderId);
-  
-      promptForPassword(() => {
-          const [paidItem] = pendingCommissions.splice(globalIndex, 1);
-          paidItem.paidDate = new Date().toISOString();
-          paidCommissions.push(paidItem);
-          saveData();
-          renderPendingCommissions();
-          renderPaidCommissions();
-          alert("Commission marked as paid!");
-      }, `Enter password to pay commission of ₹${commissionToPay.commissionAmount.toFixed(2)} for ${commissionToPay.storeName}`);
+      if (globalIndex > -1) {
+        const [paidItem] = pendingCommissions.splice(globalIndex, 1);
+        paidItem.paidDate = new Date().toISOString();
+        paidCommissions.push(paidItem);
+        saveData();
+        renderPendingCommissions();
+        renderPaidCommissions();
+        alert("Commission marked as paid!");
+      }
+    }, `Enter owner password to pay commission of ₹${commissionToPay.commissionAmount.toFixed(2)} for ${commissionToPay.storeName}`);
   };
+
 
   window.updateCart = (productIndex, change) => {
     const product = products[productIndex];
