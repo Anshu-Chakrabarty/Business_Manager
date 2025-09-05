@@ -1,0 +1,102 @@
+/* Custom styles */
+body {
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Style for the active navigation link */
+.sidebar-link.active {
+  background-color: #eef2ff; /* indigo-50 */
+  color: #4f46e5; /* indigo-600 */
+  font-weight: 600;
+}
+
+.sidebar-link.active svg {
+  color: #4f46e5; /* indigo-600 */
+}
+
+/* Style for clickable dashboard cards */
+.dashboard-card {
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Styles for Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+.modal-container {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 90%;
+  max-width: 500px;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) .modal-container {
+  transform: scale(1);
+}
+
+/* Quantity buttons in Order Management */
+.quantity-btn {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  font-weight: bold;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.quantity-btn:hover {
+  background-color: #c7d2fe;
+}
+
+/* Print styles for the bill */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #bill-output,
+  #bill-output * {
+    visibility: visible;
+  }
+  #bill-output {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+    box-shadow: none;
+    border: none;
+  }
+  .sidebar,
+  .flex.justify-end,
+  main > h2,
+  .bg-white.p-6.rounded-xl.shadow-md,
+  #mobile-menu-button {
+    display: none;
+  }
+}
