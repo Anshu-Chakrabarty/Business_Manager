@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
     JSON.parse(localStorage.getItem("pendingCommissions")) || [];
   let paidCommissions =
     JSON.parse(localStorage.getItem("paidCommissions")) || [];
+  let momoOrders = JSON.parse(localStorage.getItem("momoOrders")) || [];
   let ownerPassword = localStorage.getItem("ownerPassword") || null;
 
   // --- DOM ELEMENTS ---
@@ -38,6 +39,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const cancelEditTransportationBtn = document.getElementById(
     "cancel-edit-transportation"
   );
+  const resetPasswordModal = document.getElementById("reset-password-modal");
+  const resetPasswordForm = document.getElementById("reset-password-form");
+  const cancelResetPasswordBtn = document.getElementById("cancel-reset-password");
+  const resetPasswordError = document.getElementById("reset-password-error");
+
 
   // --- STATE ---
   let cart = [];
@@ -57,6 +63,7 @@ document.addEventListener("DOMContentLoaded", function () {
       JSON.stringify(pendingCommissions)
     );
     localStorage.setItem("paidCommissions", JSON.stringify(paidCommissions));
+    localStorage.setItem("momoOrders", JSON.stringify(momoOrders));
     if (ownerPassword) {
       localStorage.setItem("ownerPassword", ownerPassword);
     }
@@ -74,11 +81,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>`,
     store: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Store Management</h2>
-                <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Store</h3><form id="add-store-form" class="space-y-4"><input type="text" name="storeName" placeholder="Store Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="text" name="customerName" placeholder="Customer Name" class="w-full p-3 border border-gray-300 rounded-lg" required><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="number" step="0.01" name="transport" placeholder="Transportation Charge (₹) (Optional)" class="w-full p-3 border border-gray-300 rounded-lg"><input type="number" step="0.01" name="storeCommission" placeholder="Store Comm (%)" class="w-full p-3 border border-gray-300 rounded-lg" required></div><textarea name="details" placeholder="Basic Details" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Store</button></form></div>
+                <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Store</h3><form id="add-store-form" class="space-y-4"><input type="text" name="storeName" placeholder="Store Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="text" name="customerName" placeholder="Customer Name" class="w-full p-3 border border-gray-300 rounded-lg" required><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="number" step="0.01" name="transport" placeholder="Transportation Charge (₹) (Optional)" class="w-full p-3 border border-gray-300 rounded-lg"><input type="number" step="0.01" name="storeCommission" placeholder="Store Comm (%)" class="w-full p-3 border border-gray-300 rounded-lg" required></div><input type="text" name="phoneNumber" placeholder="Shop Phone Number" class="w-full p-3 border border-gray-300 rounded-lg"><textarea name="details" placeholder="Basic Details" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Store</button></form></div>
                 <div class="mt-8 mb-4">
                   <input type="text" id="search-store-input" placeholder="Search by Store or Customer Name..." class="w-full p-3 border border-gray-300 rounded-lg">
                 </div>
-                <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">All Stores</h3><div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">#</th><th class="p-4 font-semibold text-sm">Name</th><th class="p-4 font-semibold text-sm">Customer</th><th class="p-4 font-semibold text-sm">Transport (₹)</th><th class="p-4 font-semibold text-sm">Store Comm (%)</th><th class="p-4 font-semibold text-sm">Details</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="stores-table-body" class="divide-y divide-gray-200"></tbody></table></div>`,
+                <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">All Stores</h3><div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">#</th><th class="p-4 font-semibold text-sm">Name</th><th class="p-4 font-semibold text-sm">Customer</th><th class="p-4 font-semibold text-sm">Transport (₹)</th><th class="p-4 font-semibold text-sm">Store Comm (%)</th><th class="p-4 font-semibold text-sm">Phone Number</th><th class="p-4 font-semibold text-sm">Details</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="stores-table-body" class="divide-y divide-gray-200"></tbody></table></div>`,
     product: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Product Management</h2>
                 <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Product</h3><form id="add-product-form" class="space-y-4"><input type="text" name="productName" placeholder="Product Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="number" step="0.01" name="price" placeholder="Price" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Product</button></form></div>
@@ -126,7 +133,87 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
                     </div>
                     <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Store</th><th class="p-4 font-semibold text-sm">Customer</th><th class="p-4 font-semibold text-sm">Items</th><th class="p-4 font-semibold text-sm">Store Commission</th><th class="p-4 font-semibold text-sm">Order Total</th></tr></thead><tbody id="todays-orders-table-body" class="divide-y divide-gray-200"></tbody></table></div>
+                    <div class="mt-8 flex flex-col sm:flex-row justify-end items-start sm:items-center mb-4 gap-4">
+                        <div class="w-full sm:w-auto">
+                            <label for="store-download-select" class="block text-sm font-medium text-gray-700">Select Store for Report</label>
+                            <select id="store-download-select" class="p-2 border border-gray-300 rounded-lg w-full">
+                                <option value="">Select a Store</option>
+                            </select>
+                        </div>
+                        <div class="w-full sm:w-auto">
+                            <label for="order-store-report-date" class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="order-store-report-date" class="p-2 border border-gray-300 rounded-lg w-full">
+                        </div>
+                        <button id="download-store-orders-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            <span class="hidden sm:inline">Download Store Report</span>
+                        </button>
+                    </div>
                 </div>`,
+    momo: () => `
+      <h2 class="text-3xl font-bold text-gray-800 mb-6">Momo Sheet</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-4">Add Momo Order</h3>
+            <form id="add-momo-order-form" class="space-y-4">
+              <select id="momo-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                <option value="">Select Store</option>
+              </select>
+              <div class="grid grid-cols-3 gap-4">
+                <div>
+                  <label for="veg-momo" class="block text-sm font-medium text-gray-700">Veg</label>
+                  <input type="number" step="0.01" id="veg-momo" name="veg" min="0" placeholder="Quantity" class="w-full p-3 border border-gray-300 rounded-lg" />
+                </div>
+                <div>
+                  <label for="chicken-momo" class="block text-sm font-medium text-gray-700">Chicken</label>
+                  <input type="number" step="0.01" id="chicken-momo" name="chicken" min="0" placeholder="Quantity" class="w-full p-3 border border-gray-300 rounded-lg" />
+                </div>
+                <div>
+                  <label for="soup-momo" class="block text-sm font-medium text-gray-700">Soup</label>
+                  <input type="number" step="0.01" id="soup-momo" name="soup" min="0" placeholder="Quantity" class="w-full p-3 border border-gray-300 rounded-lg" />
+                </div>
+              </div>
+              <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Order</button>
+            </form>
+          </div>
+          <div class="mt-8 bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-4">Download Daily Reports</h3>
+            <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full">
+                <button id="download-momo-sheet-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center w-full sm:w-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    Download Today's Sheet
+                </button>
+                <div class="w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-end gap-2">
+                    <select id="momo-sticker-store-select" class="p-2 border border-gray-300 rounded-lg w-full">
+                        <option value="">Select Store</option>
+                    </select>
+                    <button id="download-momo-sticker-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        Sticker Sheet
+                    </button>
+                </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold text-gray-800 mb-4">Daily Momo Orders</h3>
+          <div class="bg-white rounded-xl shadow-md overflow-x-auto">
+            <table class="w-full text-left">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="p-4 font-semibold text-sm">Counter</th>
+                  <th class="p-4 font-semibold text-sm">Veg</th>
+                  <th class="p-4 font-semibold text-sm">Chicken</th>
+                  <th class="p-4 font-semibold text-sm">Soup</th>
+                </tr>
+              </thead>
+              <tbody id="momo-orders-table-body" class="divide-y divide-gray-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `,
     billing: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Billing</h2>
                 <div class="bg-white p-6 rounded-xl shadow-md">
@@ -136,19 +223,15 @@ document.addEventListener("DOMContentLoaded", function () {
                             <label for="billing-store-select" class="block text-sm font-medium text-gray-700">Store</label>
                             <select id="billing-store-select" class="mt-1 w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select a Store</option></select>
                         </div>
-                        <div>
-                            <label for="billing-start-date" class="block text-sm font-medium text-gray-700">From Date</label>
-                            <input type="date" id="billing-start-date" class="mt-1 w-full p-3 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="billing-end-date" class="block text-sm font-medium text-gray-700">To Date</label>
-                            <input type="date" id="billing-end-date" class="mt-1 w-full p-3 border border-gray-300 rounded-lg">
+                        <div class="flex-grow md:col-span-2">
+                            <label for="billing-date" class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="billing-date" class="mt-1 w-full p-3 border border-gray-300 rounded-lg">
                         </div>
                         <button id="generate-bill-btn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold h-fit w-full md:col-span-4">Generate</button>
                     </div>
                 </div>
                 <div id="bill-output-container" class="mt-8 hidden">
-                    <div id="bill-output" class="bg-white p-8 rounded-xl shadow-lg">
+                    <div id="bill-output" class="relative bg-white p-8 rounded-xl shadow-lg">
                         </div>
                     <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
                             <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
@@ -334,8 +417,9 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                         </div>
                         <input type="text" name="deliveryShopCode" placeholder="Delivery Shop Code" class="w-full p-3 border border-gray-300 rounded-lg">
-                        <input type="text" name="deliveryShopPhone" placeholder="Delivery Shop Phone Number" class="w-full p-3 border border-gray-300 rounded-lg">
-                        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Assign</button>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Assign</button>
+                        </div>
                     </form>
                 </div>
                 <div class="mt-8">
@@ -394,6 +478,9 @@ document.addEventListener("DOMContentLoaded", function () {
       case "order":
         bindOrderListeners();
         renderTodaysOrders();
+        break;
+      case "momo":
+        bindMomoListeners();
         break;
       case "billing":
         bindBillingListeners();
@@ -472,6 +559,42 @@ document.addEventListener("DOMContentLoaded", function () {
       .addEventListener("click", handleDownloadOrdersExcel);
     renderStoreOptionsForOrder();
     renderProductsForOrder();
+    
+    document.getElementById('order-product-list').addEventListener('keydown', (e) => {
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.tagName === 'INPUT' && activeElement.type === 'number') {
+        const productInputs = document.querySelectorAll('#order-product-list input[type="number"]');
+        const currentIndex = Array.from(productInputs).indexOf(activeElement);
+        
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          if (currentIndex < productInputs.length - 1) {
+            productInputs[currentIndex + 1].focus();
+          }
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          if (currentIndex > 0) {
+            productInputs[currentIndex - 1].focus();
+          }
+        }
+      }
+    });
+    
+    document.getElementById('download-store-orders-btn').addEventListener('click', handleDownloadStoreOrders);
+  }
+  
+  function bindMomoListeners() {
+    const momoStoreSelect = document.getElementById("momo-store-select");
+    momoStoreSelect.innerHTML = "<option value=''>Select Store</option>" + stores.map(s => `<option value="${s.storeName}">${s.storeName}</option>`).join('');
+    
+    document.getElementById("add-momo-order-form").addEventListener("submit", handleAddMomoOrder);
+    document.getElementById("download-momo-sheet-btn").addEventListener("click", handleDownloadMomoSheet);
+    
+    const momoStickerStoreSelect = document.getElementById("momo-sticker-store-select");
+    momoStickerStoreSelect.innerHTML = "<option value=''>Select Store</option>" + stores.map(s => `<option value="${s.storeName}">${s.storeName}</option>`).join('');
+    document.getElementById("download-momo-sticker-btn").addEventListener("click", handleDownloadMomoSticker);
+    
+    renderMomoSheet();
   }
 
   function bindBillingListeners() {
@@ -487,28 +610,6 @@ document.addEventListener("DOMContentLoaded", function () {
   function bindAgentListeners() {
     const authSection = document.getElementById("agent-auth-section");
     const agentContent = document.getElementById("agent-content");
-    const agentReportNameSelect = document.getElementById("agent-report-name");
-
-    const populateAgentSelectors = () => {
-      const allAgents = [{ agentName: "owner" }, ...agents];
-      if (agentReportNameSelect) {
-        agentReportNameSelect.innerHTML =
-          `<option value="all">All Agents</option>` +
-          allAgents.map((agent) => `<option value="${agent.agentName}">${agent.agentName}</option>`).join("");
-      }
-      const pendingAgentSelect = document.getElementById("agent-name-pending");
-      const paidAgentSelect = document.getElementById("agent-name-paid");
-      if (pendingAgentSelect) {
-        pendingAgentSelect.innerHTML =
-          `<option value="">Select Agent</option>` +
-          allAgents.map((agent) => `<option value="${agent.agentName}">${agent.agentName}</option>`).join("");
-      }
-      if (paidAgentSelect) {
-        paidAgentSelect.innerHTML =
-          `<option value="">Select Agent</option>` +
-          allAgents.map((agent) => `<option value="${agent.agentName}">${agent.agentName}</option>`).join("");
-      }
-    };
 
     if (!ownerPassword) {
       authSection.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Create Owner Password</h3><p class="text-gray-600 mb-4">Create a secure password to manage agents and sensitive actions. This will be the master password.</p><form id="owner-signup-form" class="space-y-4"><input type="password" id="new-owner-password" placeholder="Enter new password" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="password" id="confirm-owner-password" placeholder="Confirm new password" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Create Password</button></form></div>`;
@@ -516,39 +617,51 @@ document.addEventListener("DOMContentLoaded", function () {
         .getElementById("owner-signup-form")
         .addEventListener("submit", handleOwnerSignup);
     } else if (!loggedInUser) {
-      authSection.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Agent Login</h3><form id="agent-login-form" class="space-y-4"><input type="text" id="agent-name-input" placeholder="Agent Name (or 'owner')" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="password" id="agent-password-input" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Login</button></form></div>`;
+      authSection.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Agent Login</h3><form id="agent-login-form" class="space-y-4"><input type="text" id="agent-name-input" placeholder="Agent Name (or 'owner')" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="password" id="agent-password-input" placeholder="Enter Password" class="w-full p-3 border border-gray-300 rounded-lg" required><div class="flex justify-between items-center"><a href="#" id="forgot-password-link" class="text-sm text-indigo-600 hover:text-indigo-800">Forgot password?</a><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Login</button></div></form></div>`;
       document
         .getElementById("agent-login-form")
         .addEventListener("submit", handleAgentLogin);
+      document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+          e.preventDefault();
+          resetPasswordModal.classList.remove('hidden');
+      });
+      resetPasswordForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const newPass = document.getElementById('new-owner-password-reset').value;
+          const confirmNewPass = document.getElementById('confirm-owner-password-reset').value;
+          if (newPass !== confirmNewPass) {
+              resetPasswordError.classList.remove('hidden');
+          } else {
+              ownerPassword = newPass;
+              saveData();
+              resetPasswordModal.classList.add('hidden');
+              document.getElementById('agent-login-form').reset();
+              alert('Password reset successfully! You can now log in.');
+          }
+      });
+      cancelResetPasswordBtn.addEventListener('click', () => {
+          resetPasswordModal.classList.add('hidden');
+          resetPasswordForm.reset();
+          resetPasswordError.classList.add('hidden');
+      });
+
     } else {
       authSection.classList.add("hidden");
       agentContent.classList.remove("hidden");
 
-      populateAgentSelectors();
-
-      const addAgentForm = document.getElementById("add-agent-form");
-      if (addAgentForm) {
-        addAgentForm.addEventListener("submit", handleAddAgent);
-        document
-          .getElementById("download-agent-report-btn")
-          .addEventListener("click", handleDownloadAgentReport);
-        const storeList = agentContent.querySelector("#agent-store-list");
-        storeList.addEventListener("change", (event) => {
-          if (event.target.type === "checkbox") {
-            const storeName = event.target.value;
-            const commissionInput = storeList.querySelector(
-              `input[name="commission_${storeName}"]`
-            );
-            commissionInput.disabled = !event.target.checked;
-            if (!event.target.checked) commissionInput.value = "";
+      const agentReportNameSelect = document.getElementById("agent-report-name");
+      const populateAgentSelectors = () => {
+          const allAgents = [{ agentName: "owner" }, ...agents];
+          if (agentReportNameSelect) {
+              agentReportNameSelect.innerHTML =
+                  `<option value="all">All Agents</option>` +
+                  allAgents.map((agent) => `<option value="${agent.agentName}">${agent.agentName}</option>`).join("");
           }
-        });
-        renderAgents();
-
-        document.getElementById("update-pending-form").addEventListener("submit", handleUpdatePendingCommission);
-        document.getElementById("update-paid-form").addEventListener("submit", handleUpdatePaidCommission);
-      }
-
+      };
+      
+      populateAgentSelectors();
+      renderAgents();
+      
       document
         .getElementById("agent-logout-btn")
         .addEventListener("click", handleAgentLogout);
@@ -635,7 +748,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (filteredStores.length === 0) {
       const message = searchTerm ? "No stores found." : "No stores added yet.";
-      storesTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-gray-500">${message}</td></tr>`;
+      storesTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4 text-gray-500">${message}</td></tr>`;
       return;
     }
 
@@ -648,6 +761,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <td class="p-4">${store.customerName}</td>
             <td class="p-4">₹${store.transport || 0}</td>
             <td class="p-4">${store.storeCommission}%</td>
+            <td class="p-4">${store.phoneNumber || ''}</td>
             <td class="p-4">${store.details}</td>
             <td class="p-4 space-x-2"><button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openEditStoreModal(${
               store.originalIndex
@@ -679,15 +793,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const renderStoreOptionsForOrder = () => {
     const orderStoreSelect = document.getElementById("order-store-select");
+    const storeDownloadSelect = document.getElementById("store-download-select");
     if (!orderStoreSelect) return;
-    orderStoreSelect.innerHTML =
-      "<option value=''>Select Store</option>" +
-      stores
-        .map(
-          (store) =>
-            `<option value="${store.storeName}">${store.storeName}</option>`
-        )
+    const allStoresInvolved = [...new Set(stores.map(o => o.storeName))].sort();
+    const storeOptions = "<option value=''>Select Store</option>" + allStoresInvolved
+        .map((store) => `<option value="${store}">${store}</option>`)
         .join("");
+    orderStoreSelect.innerHTML = storeOptions;
+    if(storeDownloadSelect) {
+      storeDownloadSelect.innerHTML = storeOptions;
+    }
   };
 
   const renderProductsForOrder = () => {
@@ -701,7 +816,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div><p class="font-semibold">${product.productName}</p><p class="text-sm text-gray-600">₹${product.price}</p></div>
             <div class="flex items-center space-x-2">
                 <button class="quantity-btn" onclick="updateCart(${index}, -1)">-</button>
-                <input type="number" value="0" min="0" class="w-16 text-center border rounded-md" onchange="setCartQuantity(${index}, this.value)">
+                <input type="number" step="0.01" value="0" min="0" class="w-16 text-center border rounded-md" onchange="setCartQuantity(${index}, this.value)">
                 <button class="quantity-btn" onclick="updateCart(${index}, 1)">+</button>
             </div>
         </div>`
@@ -766,12 +881,53 @@ document.addEventListener("DOMContentLoaded", function () {
                 (item) => `<div>${item.productName} x ${item.quantity}</div>`
               )
               .join("")}</td>
-            <td class="p-4 text-sm">${order.storeCommission}%</td>
+            <td class="p-4 text-sm">₹${(order.itemsTotal * (order.storeCommission / 100)).toFixed(2)}</td>
             <td class="p-4 font-semibold">₹${order.total.toFixed(2)}</td>
         </tr>`
           )
           .join("")
       : `<tr><td colspan="6" class="text-center p-4 text-gray-500">No orders placed today.</td></tr>`;
+  };
+
+  const renderMomoSheet = () => {
+    const momoOrdersTableBody = document.getElementById('momo-orders-table-body');
+    const momoStickerStoreSelect = document.getElementById('momo-sticker-store-select');
+    if (!momoOrdersTableBody) return;
+    
+    const storeOrders = {};
+    const today = new Date().toISOString().slice(0, 10);
+    
+    momoOrders.filter(order => order.date === today).forEach(order => {
+        if (!storeOrders[order.storeName]) {
+            storeOrders[order.storeName] = { veg: 0, chicken: 0, soup: 0 };
+        }
+        storeOrders[order.storeName].veg += order.veg;
+        storeOrders[order.storeName].chicken += order.chicken;
+        storeOrders[order.storeName].soup += order.soup;
+    });
+
+    if (Object.keys(storeOrders).length === 0) {
+        momoOrdersTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-500">No momo orders for today.</td></tr>`;
+        return;
+    }
+    
+    let html = '';
+    for (const storeName in storeOrders) {
+        html += `
+            <tr class="hover:bg-gray-50">
+                <td class="p-4 font-medium">${storeName}</td>
+                <td class="p-4">${storeOrders[storeName].veg}</td>
+                <td class="p-4">${storeOrders[storeName].chicken}</td>
+                <td class="p-4">${storeOrders[storeName].soup}</td>
+            </tr>
+        `;
+    }
+    momoOrdersTableBody.innerHTML = html;
+    
+    const allStoreNames = Object.keys(storeOrders).sort();
+    momoStickerStoreSelect.innerHTML = "<option value=''>Select Store</option>" + allStoreNames
+      .map(storeName => `<option value="${storeName}">${storeName}</option>`)
+      .join('');
   };
 
   const renderAgents = () => {
@@ -803,7 +959,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     if (!commissionTableBody) return;
     const agentCommissions = pendingCommissions.filter(
-      (c) => loggedInUser === 'owner' || c.agentName === loggedInUser.agentName
+      (c) => loggedInUser === 'owner' || (loggedInUser && c.agentName === loggedInUser.agentName)
     );
     commissionTableBody.innerHTML =
       agentCommissions
@@ -827,7 +983,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     if (!commissionTableBody) return;
     const agentCommissions = paidCommissions.filter(
-      (c) => loggedInUser === 'owner' || c.agentName === loggedInUser.agentName
+      (c) => loggedInUser === 'owner' || (loggedInUser && c.agentName === loggedInUser.agentName)
     );
     commissionTableBody.innerHTML =
       agentCommissions
@@ -852,13 +1008,11 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     const transportSelectName = document.getElementById("transport-select-name");
 
-    // Populate the dropdown with unique transporter names
     const transporters = [...new Set(transportation.map((t) => t.transportationName))];
     transportSelectName.innerHTML =
       `<option value="all">All Transporters</option>` +
       transporters.map((name) => `<option value="${name}">${name}</option>`).join("");
 
-    // Render the main transportation table as before
     if (!transportationTableBody) return;
     transportationTableBody.innerHTML =
       transportation
@@ -942,6 +1096,7 @@ document.addEventListener("DOMContentLoaded", function () {
       customerName: formData.get("customerName"),
       transport: parseFloat(formData.get("transport")) || 0,
       storeCommission: parseFloat(formData.get("storeCommission")) || 0,
+      phoneNumber: formData.get("phoneNumber"),
       details: formData.get("details"),
     });
     saveData();
@@ -1012,37 +1167,67 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTodaysOrders();
     updateDashboard();
   }
+  
+  function handleAddMomoOrder(e) {
+    e.preventDefault();
+    const storeName = document.getElementById("momo-store-select").value;
+    const veg = parseFloat(document.getElementById("veg-momo").value) || 0;
+    const chicken = parseFloat(document.getElementById("chicken-momo").value) || 0;
+    const soup = parseFloat(document.getElementById("soup-momo").value) || 0;
+
+    if (!storeName || (veg === 0 && chicken === 0 && soup === 0)) {
+        alert("Please select a store and enter at least one quantity.");
+        return;
+    }
+    
+    // Check if an order for the same store and day exists
+    const today = new Date().toISOString().slice(0, 10);
+    const existingOrderIndex = momoOrders.findIndex(
+      order => order.storeName === storeName && order.date === today
+    );
+
+    if (existingOrderIndex > -1) {
+      momoOrders[existingOrderIndex].veg += veg;
+      momoOrders[existingOrderIndex].chicken += chicken;
+      momoOrders[existingOrderIndex].soup += soup;
+    } else {
+      momoOrders.push({
+          date: today,
+          storeName,
+          veg,
+          chicken,
+          soup,
+      });
+    }
+
+    saveData();
+    renderMomoSheet();
+    e.target.reset();
+  }
 
   function handleGenerateBill() {
     const storeName = document.getElementById("billing-store-select").value;
-    const startDate = document.getElementById("billing-start-date").value;
-    const endDate = document.getElementById("billing-end-date").value;
-
-    if (!storeName) {
-      alert("Please select a store.");
-      return;
+    const billDate = document.getElementById("billing-date").value;
+    
+    if (!storeName || !billDate) {
+        alert("Please select a store and a date.");
+        return;
     }
 
     const store = stores.find((s) => s.storeName === storeName);
     const relevantOrders = orders.filter((o) => {
-      if (o.storeName !== storeName) return false;
-      const orderDate = o.date.slice(0, 10);
-      if (startDate && orderDate < startDate) return false;
-      if (endDate && orderDate > endDate) return false;
-      return true;
+        const orderDate = new Date(o.date).toISOString().slice(0, 10);
+        return o.storeName === storeName && orderDate === billDate;
     });
 
     if (relevantOrders.length === 0) {
-      alert(`No orders found for ${storeName} in the selected date range.`);
+      alert(`No orders found for ${storeName} on ${new Date(billDate).toLocaleDateString('en-GB')}.`);
       return;
     }
 
     const relevantPayments = payments.filter((p) => {
-      if (p.storeName !== storeName) return false;
-      const paymentDate = p.date.slice(0, 10);
-      if (startDate && paymentDate < startDate) return false;
-      if (endDate && paymentDate > endDate) return false;
-      return true;
+      const paymentDate = new Date(p.date).toISOString().slice(0, 10);
+      return p.storeName === storeName && paymentDate === billDate;
     });
 
     const cashPaid = relevantPayments.reduce(
@@ -1059,20 +1244,12 @@ document.addEventListener("DOMContentLoaded", function () {
       .reduce((sum, p) => sum + (p.cashAmount || 0) + (p.onlineAmount || 0), 0);
     const dueAmount = calculateDue(storeName);
 
-    let dateTitle = "for All Time";
-    if (startDate && endDate) {
-      dateTitle = `from ${startDate} to ${endDate}`;
-    } else if (startDate) {
-      dateTitle = `from ${startDate}`;
-    } else if (endDate) {
-      dateTitle = `up to ${endDate}`;
-    }
-
     const billOutput = document.getElementById("bill-output");
     billOutput.innerHTML = `
-            <div class="text-center mb-8">
+            <div class="text-center mb-8 relative">
+                <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="bill-watermark">
                 <h2 class="text-2xl font-bold">Bill for ${storeName}</h2>
-                <p class="text-gray-600">Date Range: ${dateTitle}</p>
+                <p class="text-gray-600">Date: ${new Date(billDate).toLocaleDateString('en-GB')}</p>
             </div>
             <h3 class="text-lg font-semibold border-b pb-2 mb-4">Orders</h3>
             ${relevantOrders
@@ -1119,7 +1296,7 @@ document.addEventListener("DOMContentLoaded", function () {
               })
               .join("")}
             <div class="border-t mt-8 pt-4">
-                    <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary (${dateTitle})</h3>
+                    <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary</h3>
                     <div class="text-right space-y-1">
                       <p>Paid by Cash: ₹${cashPaid.toFixed(2)}</p>
                       <p>Paid by Online: ₹${onlinePaid.toFixed(2)}</p>
@@ -1185,20 +1362,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const transportationName = formData.get("transportationName");
     const selectedStores = formData.getAll("transport_stores");
     const deliveryShopCode = formData.get("deliveryShopCode");
-    const deliveryShopPhone = formData.get("deliveryShopPhone");
 
     if (!transportationName || selectedStores.length === 0) {
       alert("Please provide a name and select at least one store.");
       return;
     }
+    
+    const existingTransport = transportation.find(
+      t => t.transportationName === transportationName && t.deliveryShopCode === deliveryShopCode
+    );
 
-    transportation.push({
-      date: new Date().toISOString(),
-      transportationName,
-      stores: selectedStores,
-      deliveryShopCode: deliveryShopCode || "",
-      deliveryShopPhone: deliveryShopPhone || "",
-    });
+    if (existingTransport) {
+        existingTransport.stores = [...new Set([...existingTransport.stores, ...selectedStores])];
+    } else {
+        transportation.push({
+            date: new Date().toISOString(),
+            transportationName,
+            stores: selectedStores,
+            deliveryShopCode: deliveryShopCode || "",
+        });
+    }
+
     saveData();
     renderTransportationPage();
     e.target.reset();
@@ -1336,31 +1520,70 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const reportData = [];
-    filteredOrders.forEach((order) => {
-      const orderDate = new Date(order.date).toLocaleDateString();
-      order.items.forEach((item) => {
-        reportData.push({
-          "Order Date": orderDate,
-          "Store Name": order.storeName,
-          "Customer Name": order.customerName,
-          "Item": item.productName,
-          "Quantity": item.quantity,
-          "Unit Price (₹)": item.price,
-          "Total Price (₹)": (item.quantity * item.price).toFixed(2),
+    const allStoreNames = [...new Set(filteredOrders.map(o => o.storeName))].sort();
+    const allProductNames = [...new Set(products.map(p => p.productName))].sort();
+
+    const reportData = allProductNames.map(pName => {
+        const row = { "Item": pName };
+        let totalQuantity = 0;
+        allStoreNames.forEach(sName => {
+            const quantity = filteredOrders
+                .filter(o => o.storeName === sName)
+                .flatMap(o => o.items)
+                .filter(i => i.productName === pName)
+                .reduce((sum, item) => sum + item.quantity, 0);
+            row[sName] = quantity > 0 ? quantity : '';
+            totalQuantity += quantity;
         });
-      });
+        row["Total"] = totalQuantity;
+        row["Stock"] = '';
+        return row;
     });
 
     const worksheet = XLSX.utils.json_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Order Details");
-
     const fileName = `Order_Report_${startDate}_to_${endDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
+  
+  function handleDownloadStoreOrders() {
+      const storeName = document.getElementById('store-download-select').value;
+      const date = document.getElementById('order-store-report-date').value;
+      
+      if (!storeName || !date) {
+          alert('Please select a store and a date to download the report.');
+          return;
+      }
+      
+      const filteredOrders = orders.filter(o => o.storeName === storeName && o.date.startsWith(date));
+      if (filteredOrders.length === 0) {
+          alert(`No orders found for store: ${storeName} on ${new Date(date).toLocaleDateString('en-GB')}.`);
+          return;
+      }
+      
+      const aggregatedItems = {};
+      filteredOrders.forEach(order => {
+          order.items.forEach(item => {
+              if (!aggregatedItems[item.productName]) {
+                  aggregatedItems[item.productName] = 0;
+              }
+              aggregatedItems[item.productName] += item.quantity;
+          });
+      });
+      
+      const reportData = Object.entries(aggregatedItems).map(([item, quantity]) => ({
+          "Item": item,
+          "Quantity": quantity
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, `${storeName} Orders`);
+      const fileName = `${storeName}_Orders_${date}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+  }
 
-  // FIX: This function was not correctly generating the Excel file.
   function handleDownloadPaymentsReport() {
     const startDate = document.getElementById("payment-download-start-date").value;
     const endDate = document.getElementById("payment-download-end-date").value;
@@ -1461,18 +1684,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const endDate = document.getElementById("transport-download-end-date").value;
     const selectedTransporter = document.getElementById("transport-select-name").value;
 
-    if (!startDate && !endDate) {
+    if (!startDate || !endDate) {
       alert("Please select a date or date range for the report.");
       return;
     }
 
-    // Get transportation assignments for the selected period
-    let relevantTransports = transportation.filter((t) => {
+    const relevantTransports = transportation.filter((t) => {
       const transportDate = t.date.slice(0, 10);
       return transportDate >= startDate && transportDate <= endDate;
     });
 
-    // If a specific transporter is selected, filter further
     if (selectedTransporter !== "all") {
       relevantTransports = relevantTransports.filter(
         (t) => t.transportationName === selectedTransporter
@@ -1484,26 +1705,22 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Aggregate all orders and their items for the relevant stores and date range
     const allOrdersInDateRange = orders.filter((o) => {
       const orderDate = o.date.slice(0, 10);
       return orderDate >= startDate && orderDate <= endDate;
     });
 
-    // Get all unique product names to create the row headers
     const allProductNames = [...new Set(products.map((p) => p.productName))].sort();
 
-    // Get all unique store names from the relevant transports for column headers
     const storeNames = [
       ...new Set(relevantTransports.flatMap((t) => t.stores)),
     ].sort();
 
-    // Map to store quantities: { "Item Name": { "Shop 1": qty, "Shop 2": qty } }
     const quantityMap = {};
     allProductNames.forEach((pName) => {
       quantityMap[pName] = {};
       storeNames.forEach((sName) => {
-        quantityMap[pName][sName] = ""; // Initialize with empty string
+        quantityMap[pName][sName] = "";
       });
     });
 
@@ -1521,25 +1738,21 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    // Convert the map to an array of objects for XLSX
     const worksheetData = [];
 
-    // Add main report heading
     worksheetData.push([
       `Delivery Challan for ${
         selectedTransporter !== "all" ? selectedTransporter : "All Transporters"
       }`,
     ]);
-    worksheetData.push([]); // Empty row for spacing
+    worksheetData.push([]);
 
-    // Create a new header row for Items and Store Names
     const headerRow = ["Item"];
     storeNames.forEach((sName) => {
       headerRow.push(sName);
     });
     worksheetData.push(headerRow);
 
-    // Add data rows
     allProductNames.forEach((pName) => {
       const row = [pName];
       storeNames.forEach((sName) => {
@@ -1549,7 +1762,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Delivery Challan");
 
@@ -1601,14 +1813,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const storeDetailsData = [];
     assignedStores.forEach((storeName) => {
       const store = stores.find((s) => s.storeName === storeName);
-      const transport = relevantTransports.find((t) =>
-        t.stores.includes(storeName)
-      );
-      if (store && transport) {
+      if (store) {
         storeDetailsData.push({
           "Store/Counter Name": store.storeName,
           "Code": store.details,
-          "Phone Number": transport.deliveryShopPhone,
+          "Phone Number": store.phoneNumber,
         });
       }
     });
@@ -1628,6 +1837,69 @@ document.addEventListener("DOMContentLoaded", function () {
     const fileName = `Store_Challan_${selectedTransporter}_${dateString}.xlsx`;
 
     XLSX.writeFile(workbook, fileName);
+  }
+
+  function handleDownloadMomoSheet() {
+      const today = new Date().toISOString().slice(0, 10);
+      const ordersToday = momoOrders.filter(order => order.date === today);
+      
+      if (ordersToday.length === 0) {
+          alert("No momo orders found for today.");
+          return;
+      }
+      
+      const consolidatedOrders = {};
+      ordersToday.forEach(order => {
+        if (!consolidatedOrders[order.storeName]) {
+          consolidatedOrders[order.storeName] = { 
+            "Store Name": order.storeName,
+            "Veg": 0, 
+            "Chicken": 0, 
+            "Soup": 0, 
+            "Date": new Date(order.date).toLocaleDateString('en-GB')
+          };
+        }
+        consolidatedOrders[order.storeName].Veg += order.veg;
+        consolidatedOrders[order.storeName].Chicken += order.chicken;
+        consolidatedOrders[order.storeName].Soup += order.soup;
+      });
+
+      const reportData = Object.values(consolidatedOrders);
+      
+      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Momo Orders");
+      
+      const fileName = `Momo_Orders_${today}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+  }
+  
+  function handleDownloadMomoSticker() {
+      const storeName = document.getElementById('momo-sticker-store-select').value;
+      if (!storeName) {
+          alert('Please select a store to download stickers.');
+          return;
+      }
+      
+      const today = new Date().toISOString().slice(0, 10);
+      const order = momoOrders.find(o => o.storeName === storeName && o.date === today);
+      
+      if (!order || (order.veg === 0 && order.chicken === 0 && order.soup === 0)) {
+          alert(`No momo orders for ${storeName} today.`);
+          return;
+      }
+      
+      const stickerData = [];
+      if (order.veg > 0) stickerData.push({ "Item": "Veg", "Quantity": order.veg });
+      if (order.chicken > 0) stickerData.push({ "Item": "Chicken", "Quantity": order.chicken });
+      if (order.soup > 0) stickerData.push({ "Item": "Soup", "Quantity": order.soup });
+      
+      const worksheet = XLSX.utils.json_to_sheet(stickerData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, `${storeName} Stickers`);
+      
+      const fileName = `${storeName}_Momo_Stickers_${today}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
   }
 
   function handleDownloadAgentReport() {
@@ -1714,7 +1986,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const name = document.getElementById("agent-name-input").value;
     const password = document.getElementById("agent-password-input").value;
 
-    // Owner login
     if (name.toLowerCase() === 'owner') {
       if (password === ownerPassword) {
         loggedInUser = 'owner';
@@ -1725,7 +1996,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Agent login
     const agent = agents.find(a => a.agentName === name);
     if (agent && agent.agentPassword === password) {
       loggedInUser = agent;
@@ -1786,6 +2056,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("edit-transport").value = store.transport;
       document.getElementById("edit-storeCommission").value =
         store.storeCommission;
+      document.getElementById("edit-phoneNumber").value = store.phoneNumber;
       document.getElementById("edit-details").value = store.details;
       editStoreModal.classList.remove("hidden");
     }, `Enter password to edit store: ${stores[index].storeName}`);
@@ -1827,8 +2098,6 @@ document.addEventListener("DOMContentLoaded", function () {
         .join("");
       document.getElementById("edit-deliveryShopCode").value =
         item.deliveryShopCode || "";
-      document.getElementById("edit-deliveryShopPhone").value =
-        item.deliveryShopPhone || "";
       editTransportationModal.classList.remove("hidden");
     }, `Enter password to edit assignment for: ${transportation[index].transportationName}`);
   };
@@ -1843,6 +2112,7 @@ document.addEventListener("DOMContentLoaded", function () {
         parseFloat(document.getElementById("edit-transport").value) || 0,
       storeCommission:
         parseFloat(document.getElementById("edit-storeCommission").value) || 0,
+      phoneNumber: document.getElementById("edit-phoneNumber").value,
       details: document.getElementById("edit-details").value,
     };
     saveData();
@@ -1874,20 +2144,27 @@ document.addEventListener("DOMContentLoaded", function () {
       ),
     ].map((el) => el.value);
     const deliveryShopCode = document.getElementById("edit-deliveryShopCode").value;
-    const deliveryShopPhone = document.getElementById("edit-deliveryShopPhone").value;
 
     if (!transportationName || selectedStores.length === 0) {
       alert("Please provide a name and select at least one store.");
       return;
     }
+    
+    const existingTransport = transportation.find(
+      t => t.transportationName === transportationName && t.deliveryShopCode === deliveryShopCode
+    );
 
-    transportation[index] = {
-      ...transportation[index],
-      transportationName,
-      stores: selectedStores,
-      deliveryShopCode: deliveryShopCode || "",
-      deliveryShopPhone: deliveryShopPhone || "",
-    };
+    if (existingTransport) {
+        existingTransport.stores = [...new Set([...existingTransport.stores, ...selectedStores])];
+    } else {
+        transportation.push({
+            date: new Date().toISOString(),
+            transportationName,
+            stores: selectedStores,
+            deliveryShopCode: deliveryShopCode || "",
+        });
+    }
+
     saveData();
     renderTransportationPage();
     editTransportationModal.classList.add("hidden");
@@ -1929,11 +2206,21 @@ document.addEventListener("DOMContentLoaded", function () {
     const originalBtnText = shareBtn.innerHTML;
     shareBtn.innerHTML = "Processing...";
     shareBtn.disabled = true;
+    
+    const billContainer = document.getElementById('bill-output');
+    
+    // Temporarily adjust size for the screenshot
+    const originalStyle = billContainer.style.cssText;
+    billContainer.style.width = '300px'; 
+    billContainer.style.padding = '10px';
+    billContainer.style.position = 'relative';
 
     try {
       const canvas = await html2canvas(billElement, {
         scale: 2,
+        useCORS: true,
       });
+      
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/png")
       );
@@ -1965,6 +2252,8 @@ document.addEventListener("DOMContentLoaded", function () {
         );
       }
     } finally {
+      // Restore original style
+      billContainer.style.cssText = originalStyle;
       shareBtn.innerHTML = originalBtnText;
       shareBtn.disabled = false;
     }
@@ -2063,7 +2352,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.setCartQuantity = (productIndex, quantity) => {
     const product = products[productIndex];
-    const qty = parseInt(quantity, 10);
+    
+    const qty = parseFloat(quantity);
+    
     let cartItem = cart.find(
       (item) => item.productName === product.productName
     );

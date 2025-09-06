@@ -108,3 +108,16 @@ body {
     display: none;
   }
 }
+
+/* Watermark styles for the bill */
+.bill-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: auto;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: -1;
+}
