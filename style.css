@@ -121,3 +121,36 @@ body {
   pointer-events: none;
   z-index: -1;
 }
+
+/* New compact bill styles */
+#bill-output {
+  width: 100%;
+  max-width: 350px; /* A bit more width for better readability */
+  margin: auto;
+  padding: 1rem;
+  font-size: 0.875rem; /* text-sm */
+}
+
+#bill-output h2 {
+  font-size: 1.25rem; /* text-xl */
+}
+
+#bill-output h3 {
+  font-size: 1rem; /* text-lg */
+}
+
+#bill-output table {
+  font-size: 0.75rem; /* text-xs */
+}
+
+#bill-output p {
+  font-size: 0.75rem; /* text-xs */
+}
+
+#bill-output .text-lg {
+  font-size: 0.875rem; /* text-sm */
+}
+
+#bill-output .text-2xl {
+  font-size: 1.125rem; /* text-lg */
+}
