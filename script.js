@@ -52,28 +52,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let passwordCallback = null;
   let loggedInUser = null;
 
-  // --- REMOVED: INITIAL DATA SEEDING (FOR MOMO) ---
-  /*
-    const initializeMomoProducts = () => {
-        const momoProducts = [
-            { productName: "Veg Momo", price: 0 },
-            { productName: "Chicken Momo", price: 0 },
-            { productName: "Soup Momo", price: 0 },
-        ];
-        let momoProductsExist = false;
-        for (const momoProduct of momoProducts) {
-            if (products.some(p => p.productName === momoProduct.productName)) {
-                momoProductsExist = true;
-                break;
-            }
-        }
-        if (!momoProductsExist) {
-            products.push(...momoProducts);
-            saveData();
-        }
-    };
-    */
-
   // --- DATA PERSISTENCE ---
   const saveData = () => {
     localStorage.setItem("stores", JSON.stringify(stores));
@@ -410,6 +388,81 @@ document.addEventListener("DOMContentLoaded", function () {
               `,
   };
 
+  // --- MODIFIED: Momo Sheet Download Function ---
+  function handleDownloadMomoSheet() {
+    const today = new Date().toISOString().slice(0, 10);
+    const ordersToday = orders.filter((o) => o.date.startsWith(today));
+
+    if (ordersToday.length === 0) {
+      alert("No orders found for today.");
+      return;
+    }
+
+    // NEW: Dynamically find all unique "Momo" or "Soup" products from today's orders (case-insensitive)
+    const reportableProductNames = [
+      ...new Set(
+        ordersToday
+          .flatMap((o) => o.items)
+          .filter((item) => {
+            const lowerCaseName = item.productName.toLowerCase();
+            return lowerCaseName.includes("momo") || lowerCaseName.includes("soup");
+          })
+          .map((item) => item.productName)
+      ),
+    ].sort();
+
+    if (reportableProductNames.length === 0) {
+      alert("No 'Momo' or 'Soup' products were ordered today.");
+      return;
+    }
+
+    const consolidatedOrders = {};
+
+    ordersToday.forEach((order) => {
+      // Ensure a row for the store exists
+      if (!consolidatedOrders[order.storeName]) {
+        consolidatedOrders[order.storeName] = {
+          "Store Name": order.storeName,
+          Date: new Date(order.date).toLocaleDateString("en-GB"),
+        };
+        // Initialize all product columns to 0 for this store
+        reportableProductNames.forEach((productName) => {
+          consolidatedOrders[order.storeName][productName] = 0;
+        });
+      }
+
+      // Add quantities from the order
+      order.items.forEach((item) => {
+        if (reportableProductNames.includes(item.productName)) {
+          consolidatedOrders[order.storeName][item.productName] +=
+            item.quantity;
+        }
+      });
+    });
+
+    const reportData = Object.values(consolidatedOrders);
+
+    if (reportData.length === 0) {
+      alert("No relevant orders found for today.");
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Momo & Soup Orders");
+
+    const fileName = `Momo_Soup_Orders_${today}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  // --- INITIALIZATION ---
+  const init = () => {
+    renderPage("dashboard");
+  };
+
+  // --- All other functions are unchanged, placing them here for completeness ---
+  // (The rest of your script.js code remains the same as the previous version)
+
   const renderPage = (pageName) => {
     const contentDiv = document.getElementById(`content-${pageName}`);
     if (!contentDiv) return;
@@ -447,14 +500,12 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
     }
   };
-
   const navigateTo = (targetId) => {
     document.getElementById(`nav-${targetId}`).click();
     if (window.innerWidth < 767) {
       sidebar.classList.add("-translate-x-full");
     }
   };
-
   sidebarLinks.forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
@@ -481,18 +532,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
-
   mobileMenuButton.addEventListener("click", () => {
     sidebar.classList.toggle("-translate-x-full");
   });
-
   function bindDashboardListeners() {
     document.querySelectorAll(".dashboard-card").forEach((card) => {
       card.addEventListener("click", () => navigateTo(card.dataset.target));
     });
     updateDashboard();
   }
-
   function bindStoreListeners() {
     document
       .getElementById("add-store-form")
@@ -501,13 +549,11 @@ document.addEventListener("DOMContentLoaded", function () {
       .getElementById("search-store-input")
       .addEventListener("input", (e) => renderStores(e.target.value));
   }
-
   function bindProductListeners() {
     document
       .getElementById("add-product-form")
       .addEventListener("submit", handleAddProduct);
   }
-
   function bindOrderListeners() {
     document
       .getElementById("place-order-btn")
@@ -561,7 +607,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .getElementById("download-momo-sticker-btn")
       .addEventListener("click", handleDownloadMomoSticker);
   }
-
   function bindBillingListeners() {
     document
       .getElementById("generate-bill-btn")
@@ -571,7 +616,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .map((s) => `<option value="${s.storeName}">${s.storeName}</option>`)
       .join("");
   }
-
   function bindAgentListeners() {
     if (!ownerPassword) {
       const signupForm = document.getElementById("initial-owner-signup-form");
@@ -630,7 +674,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     renderAgents();
   }
-
   function bindPaymentListeners() {
     document
       .getElementById("add-payment-form")
@@ -642,7 +685,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .getElementById("download-payments-btn")
       .addEventListener("click", handleDownloadPaymentsReport);
   }
-
   function bindTransportationListeners() {
     document
       .getElementById("add-transportation-form")
@@ -674,7 +716,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .addEventListener("click", handleDownloadTransportStoreDetails);
     renderTransportationPage();
   }
-
   const promptForPassword = (callback, message) => {
     if (!ownerPassword) {
       console.error("Attempted to prompt for password when none is set.");
@@ -688,7 +729,6 @@ document.addEventListener("DOMContentLoaded", function () {
     passwordModal.classList.remove("hidden");
     document.getElementById("password-input").focus();
   };
-
   passwordForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const password = document.getElementById("password-input").value;
@@ -704,21 +744,18 @@ document.addEventListener("DOMContentLoaded", function () {
       passwordError.classList.remove("hidden");
     }
   });
-
   cancelPasswordBtn.addEventListener("click", () => {
     passwordModal.classList.add("hidden");
     passwordError.classList.add("hidden");
     document.getElementById("password-input").value = "";
     passwordCallback = null;
   });
-
   forgotPasswordLink.addEventListener("click", (e) => {
     e.preventDefault();
     passwordModal.classList.add("hidden");
     resetPasswordModal.classList.remove("hidden");
     document.getElementById("new-owner-password-reset").focus();
   });
-
   resetPasswordForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const newPassword = document.getElementById(
@@ -746,81 +783,13 @@ document.addEventListener("DOMContentLoaded", function () {
       passwordCallback = null;
     }
   });
-
   cancelResetPasswordBtn.addEventListener("click", () => {
     resetPasswordModal.classList.add("hidden");
     resetPasswordError.classList.add("hidden");
     resetPasswordForm.reset();
   });
-  // ... (All other functions from your script)
-
-  // --- MODIFIED: Momo Sheet Download Function ---
-  function handleDownloadMomoSheet() {
-    const today = new Date().toISOString().slice(0, 10);
-    const ordersToday = orders.filter((o) => o.date.startsWith(today));
-
-    if (ordersToday.length === 0) {
-      alert("No orders found for today.");
-      return;
-    }
-
-    // NEW: Dynamically find all unique "Momo" products from today's orders
-    const momoProductNamesForToday = [
-      ...new Set(
-        ordersToday
-          .flatMap((o) => o.items)
-          .filter((item) =>
-            item.productName.toLowerCase().includes("momo")
-          )
-          .map((item) => item.productName)
-      ),
-    ].sort();
-
-    if (momoProductNamesForToday.length === 0) {
-      alert("No 'Momo' products were ordered today.");
-      return;
-    }
-
-    const consolidatedOrders = {};
-
-    ordersToday.forEach((order) => {
-      // Ensure a row for the store exists
-      if (!consolidatedOrders[order.storeName]) {
-        consolidatedOrders[order.storeName] = {
-          "Store Name": order.storeName,
-          Date: new Date(order.date).toLocaleDateString("en-GB"),
-        };
-        // Initialize all momo product columns to 0 for this store
-        momoProductNamesForToday.forEach((momoName) => {
-          consolidatedOrders[order.storeName][momoName] = 0;
-        });
-      }
-
-      // Add quantities from the order
-      order.items.forEach((item) => {
-        if (momoProductNamesForToday.includes(item.productName)) {
-          consolidatedOrders[order.storeName][item.productName] +=
-            item.quantity;
-        }
-      });
-    });
-
-    const reportData = Object.values(consolidatedOrders);
-
-    if (reportData.length === 0) {
-      alert("No momo orders found for today.");
-      return;
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(reportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Momo Orders");
-
-    const fileName = `Momo_Orders_${today}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-  }
-
-  // --- All other functions (unchanged) ---
+  // ... and the rest of your functions (updateDashboard, renderStores, etc.)
+  // (They are unchanged and not repeated here for brevity, but they are included in the downloadable file)
   const updateDashboard = () => {
     const totalStoresEl = document.getElementById("dashboard-total-stores");
     const totalProductsEl = document.getElementById(
@@ -2505,12 +2474,6 @@ document.addEventListener("DOMContentLoaded", function () {
   window.removeFromCart = (cartIndex) => {
     cart.splice(cartIndex, 1);
     renderCart();
-  };
-
-  const init = () => {
-    // REMOVED: The call to initialize hardcoded momo products
-    // initializeMomoProducts();
-    renderPage("dashboard");
   };
 
   init();
