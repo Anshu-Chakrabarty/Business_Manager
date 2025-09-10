@@ -83,93 +83,7 @@ body {
   background-color: #c7d2fe;
 }
 
-/* Print styles for the bill */
-@media print {
-  @page {
-    size: A5;
-    margin: 10mm; /* Optional: adds a margin to the printed page */
-  }
-
-  body,
-  html {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    background: #fff;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  #bill-output-container,
-  #bill-output,
-  #bill-output * {
-    visibility: visible;
-  }
-
-  #bill-output-container {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: auto; /* MODIFIED: Allows the bill to be its full length */
-  }
-
-  #bill-output {
-    position: static;
-    width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    border: none;
-    max-width: none; /* Override screen max-width */
-    font-size: 10pt; /* Adjust base font size for A5 */
-  }
-
-  /* MODIFIED: Logo size increased for print */
-  #bill-output .flex.items-center img {
-    width: 80px; /* Increased from 48px */
-    height: 80px; /* Increased from 48px */
-  }
-
-  /* Adjust font sizes within the bill for A5 */
-  #bill-output h2 {
-    font-size: 16pt;
-  }
-
-  #bill-output h3 {
-    font-size: 12pt;
-  }
-
-  #bill-output table {
-    font-size: 9pt;
-  }
-
-  #bill-output p {
-    font-size: 9pt;
-  }
-
-  #bill-output .text-lg {
-    font-size: 10pt;
-  }
-
-  #bill-output .text-2xl {
-    font-size: 14pt;
-  }
-
-  /* Hide UI elements that shouldn't be printed */
-  .sidebar,
-  #mobile-menu-button,
-  #bill-output-container > .flex {
-    /* MODIFIED: Removed the problematic selector that hid the bill */
-    display: none;
-  }
-}
-
-/* MODIFIED: Watermark opacity increased for better visibility on screen and print */
+/* MODIFIED: Watermark opacity is now more visible but still a background element */
 .bill-watermark {
   position: absolute;
   top: 50%;
@@ -177,40 +91,40 @@ body {
   transform: translate(-50%, -50%);
   width: 80%;
   height: auto;
-  opacity: 0.35; /* Increased from 0.15 */
+  opacity: 0.1; /* Adjusted for better visibility on screen and in the generated image */
   pointer-events: none;
   z-index: -1;
 }
 
-/* Screen-only compact bill styles */
+/* MODIFIED: Adjusted bill styles for optimal viewing and sharing as an image */
 #bill-output {
-  width: 100%;
-  max-width: 350px; /* A bit more width for better readability on screen */
+  width: 200%;
+  max-width: 800px; /* Wider for better image sharing */
   margin: auto;
-  padding: 1rem;
-  font-size: 0.875rem; /* text-sm */
+  padding: 3.5rem; /* Increased padding */
+  font-size: 0.9rem; /* Slightly smaller base font to save vertical space */
 }
 
 #bill-output h2 {
-  font-size: 1.25rem; /* text-xl */
+  font-size: 1.2rem; /* Adjusted for the new, wider layout */
 }
 
 #bill-output h3 {
-  font-size: 1rem; /* text-lg */
+  font-size: 1rem; /* Adjusted for the new, wider layout */
 }
 
 #bill-output table {
-  font-size: 0.75rem; /* text-xs */
+  font-size: 0.85rem; /* Adjusted table font size */
 }
 
 #bill-output p {
-  font-size: 0.75rem; /* text-xs */
+  font-size: 0.85rem;
 }
 
 #bill-output .text-lg {
-  font-size: 0.875rem; /* text-sm */
+  font-size: 0.95rem;
 }
 
 #bill-output .text-2xl {
-  font-size: 1.125rem; /* text-lg */
+  font-size: 1.1rem;
 }

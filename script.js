@@ -234,11 +234,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div id="bill-output" class="relative bg-white p-8 rounded-xl shadow-lg">
                     </div>
                     <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
-                                 <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
-                                    Share
-                                </button>
-                                <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download Bill</button>
+                               <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+                                 Share
+                               </button>
+                               <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download Bill</button>
                     </div>
                 </div>`,
     agent: () => {
@@ -447,7 +447,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // MODIFIED: This part now filters the main 'products' array to maintain the original order.
     const reportableProductNames = products
       .filter((product) => {
         const lowerCaseName = product.productName.toLowerCase();
@@ -464,10 +463,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     ordersToday.forEach((order) => {
       if (!consolidatedOrders[order.storeName]) {
-        consolidatedOrders[order.storeName] = {
-          "Store Name": order.storeName,
-          Date: new Date(order.date).toLocaleDateString("en-GB"),
-        };
+        consolidatedOrders[order.storeName] = {};
         reportableProductNames.forEach((productName) => {
           consolidatedOrders[order.storeName][productName] = 0;
         });
@@ -481,14 +477,35 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
-    const reportData = Object.values(consolidatedOrders);
+    const reportData = Object.keys(consolidatedOrders).map((storeName) => {
+      const row = { "Store Name": storeName };
+      Object.assign(row, consolidatedOrders[storeName]);
+      return row;
+    });
 
     if (reportData.length === 0) {
       alert("No relevant orders found for today.");
       return;
     }
 
-    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    // NEW: Create a new worksheet with the date and headers
+    const worksheetData = [
+      ["Momo & Soup Orders Report"],
+      [`Date: ${new Date().toLocaleDateString("en-GB")}`],
+      [],
+      ["Store Name", ...reportableProductNames]
+    ];
+
+    // Add the data rows
+    reportData.forEach(row => {
+        const rowValues = [row["Store Name"]];
+        reportableProductNames.forEach(productName => {
+            rowValues.push(row[productName] || 0);
+        });
+        worksheetData.push(rowValues);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Momo & Soup Orders");
 
@@ -672,6 +689,33 @@ document.addEventListener("DOMContentLoaded", function () {
     const today = new Date().toISOString().slice(0, 10);
     document.getElementById("return-filter-date").value = today;
     renderReturnsList(today);
+    // NEW: Add keyboard navigation logic for return products
+    document
+      .getElementById("return-product-list")
+      .addEventListener("keydown", (e) => {
+        const activeElement = document.activeElement;
+        if (
+          activeElement &&
+          activeElement.tagName === "INPUT" &&
+          activeElement.type === "number"
+        ) {
+          const productInputs = document.querySelectorAll(
+            '#return-product-list input[type="number"]'
+          );
+          const currentIndex = Array.from(productInputs).indexOf(activeElement);
+          if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+            e.preventDefault();
+            if (currentIndex < productInputs.length - 1) {
+              productInputs[currentIndex + 1].focus();
+            }
+          } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            if (currentIndex > 0) {
+              productInputs[currentIndex - 1].focus();
+            }
+          }
+        }
+      });
   }
 
   function bindBillingListeners() {
@@ -980,10 +1024,10 @@ document.addEventListener("DOMContentLoaded", function () {
               item.quantity
             }</div>
               <div class="flex items-center space-x-2"><span>₹${(
-                item.price * item.quantity
-              ).toFixed(
-                2
-              )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromCart(${index})">X</button></div>
+              item.price * item.quantity
+            ).toFixed(
+              2
+            )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromCart(${index})">X</button></div>
           </div>`
           )
           .join("")
@@ -1371,7 +1415,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return o.storeName === storeName && orderDate === billDate;
     });
 
-    // NEW: Get returns for the same day
+    // Get returns for the same day
     const relevantReturns = returns.filter((r) => {
       const returnDate = new Date(r.date).toISOString().slice(0, 10);
       return r.storeName === storeName && returnDate === billDate;
@@ -1403,7 +1447,7 @@ document.addEventListener("DOMContentLoaded", function () {
       0
     );
 
-    // MODIFIED: Previous due calculation now accounts for past returns
+    // Previous due calculation now accounts for past returns
     const totalOrderedBefore = orders
       .filter(
         (o) => o.storeName === storeName && o.date.slice(0, 10) < billDate
@@ -1428,37 +1472,37 @@ document.addEventListener("DOMContentLoaded", function () {
     const dueAmount = calculateDue(storeName);
     const billOutput = document.getElementById("bill-output");
 
-    // NEW: Generate HTML for the returns section
+    // Re-generating HTML for the returns section (this was the part I previously removed)
     let returnsHtml = "";
     if (relevantReturns.length > 0) {
       returnsHtml = `
-              <h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3>
-              <table class="w-full text-sm mt-2">
-                  <thead><tr class="border-b"><th class="text-left py-1">Item</th><th class="text-right py-1">Qty</th><th class="text-right py-1">Price</th><th class="text-right py-1">Total</th></tr></thead>
-                  <tbody>
-                      ${relevantReturns
-                        .flatMap((r) => r.items)
-                        .map(
-                          (item) =>
-                            `<tr><td class="py-1">${
-                              item.productName
-                            }</td><td class="text-right py-1">${
-                              item.quantity
-                            }</td><td class="text-right py-1">₹${
-                              item.price
-                            }</td><td class="text-right py-1">₹${(
-                              item.quantity * item.price
-                            ).toFixed(2)}</td></tr>`
-                        )
-                        .join("")}
-                  </tbody>
-              </table>
-              <div class="text-right mt-2 space-y-1">
-                  <p class="font-bold text-lg text-red-500">Total Return Value: - ₹${totalReturnValue.toFixed(
-                    2
-                  )}</p>
-              </div>
-          `;
+            <h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3>
+            <table class="w-full text-sm mt-2">
+                <thead><tr class="border-b"><th class="text-left py-1">Item</th><th class="text-right py-1">Qty</th><th class="text-right py-1">Price</th><th class="text-right py-1">Total</th></tr></thead>
+                <tbody>
+                    ${relevantReturns
+                      .flatMap((r) => r.items)
+                      .map(
+                        (item) =>
+                          `<tr><td class="py-1">${
+                            item.productName
+                          }</td><td class="text-right py-1">${
+                            item.quantity
+                          }</td><td class="text-right py-1">₹${
+                            item.price
+                          }</td><td class="text-right py-1">₹${(
+                            item.quantity * item.price
+                          ).toFixed(2)}</td></tr>`
+                      )
+                      .join("")}
+                </tbody>
+            </table>
+            <div class="text-right mt-2 space-y-1">
+                <p class="font-bold text-lg text-red-500">Total Return Value: - ₹${totalReturnValue.toFixed(
+                  2
+                )}</p>
+            </div>
+        `;
     }
 
     billOutput.innerHTML = `
@@ -1538,11 +1582,14 @@ document.addEventListener("DOMContentLoaded", function () {
                   )}</p>
               </div>
           </div>
-      `;
+        `;
     document.getElementById("bill-output-container").classList.remove("hidden");
-    document.getElementById("download-bill-btn").onclick = () => window.print();
+    
+    // Updated button listeners to use the new image-based functions
     document.getElementById("share-bill-btn").onclick = () =>
-      shareBill(storeName, billOutput);
+      shareBillAsImage(storeName, billOutput);
+    document.getElementById("download-bill-btn").onclick = () =>
+      downloadBillAsImage(storeName, billOutput);
   }
   function handleAddAgent(e) {
     e.preventDefault();
@@ -2448,57 +2495,38 @@ document.addEventListener("DOMContentLoaded", function () {
     return totalOrderedValue - totalPaid - totalReturned;
   };
 
-  // MODIFIED: This is the refactored function to generate and share as PDF
-  async function shareBill(storeName, billElement) {
+  // NEW: Updated function to generate and share bill as an image
+  async function shareBillAsImage(storeName, billElement) {
+    if (!navigator.share) {
+      alert("Web Share API is not supported in your browser.");
+      return;
+    }
+
     const shareBtn = document.getElementById("share-bill-btn");
     const originalBtnText = shareBtn.innerHTML;
     shareBtn.innerHTML = "Processing...";
     shareBtn.disabled = true;
 
     try {
-      const {
-        jsPDF
-      } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a5');
       const canvas = await html2canvas(billElement, {
         scale: 2,
-        useCORS: true
+        useCORS: true,
+        backgroundColor: '#ffffff'
       });
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 148;
-      const pageHeight = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const file = new File([blob], `bill_${storeName}_${new Date().toISOString().slice(0, 10)}.png`, { type: 'image/png' });
 
-      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        doc.addPage();
-        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      const pdfBlob = doc.output('blob');
-      const file = new File([pdfBlob], `Bill_for_${storeName}.pdf`, {
-        type: 'application/pdf'
-      });
-
-      if (navigator.canShare && navigator.canShare({
-          files: [file]
-        })) {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: `Bill for ${storeName}`,
-          text: `Here is the bill for ${storeName} in PDF format.`
+          text: `Here is the bill for ${storeName}.`
         });
       } else {
-        alert("File sharing is not supported on this device. Please download the bill and share it manually.");
+        alert("File sharing is not supported on this device. Please use the download button.");
       }
     } catch (error) {
-      console.error("Error generating or sharing bill PDF:", error);
+      console.error("Error generating or sharing bill image:", error);
       alert("An error occurred while trying to share the bill. Please try downloading it instead.");
     } finally {
       shareBtn.innerHTML = originalBtnText;
@@ -2506,6 +2534,32 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // NEW: Function to download bill as an image
+  async function downloadBillAsImage(storeName, billElement) {
+    const downloadBtn = document.getElementById("download-bill-btn");
+    const originalBtnText = downloadBtn.innerHTML;
+    downloadBtn.innerHTML = "Downloading...";
+    downloadBtn.disabled = true;
+  
+    try {
+      const canvas = await html2canvas(billElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+  
+      const link = document.createElement("a");
+      link.download = `bill_${storeName}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (error) {
+      console.error("Error generating bill image for download:", error);
+      alert("An error occurred while trying to download the bill. Please try again.");
+    } finally {
+      downloadBtn.innerHTML = originalBtnText;
+      downloadBtn.disabled = false;
+    }
+  }
 
   window.removeStore = (index) => {
     promptForPassword(() => {
@@ -2717,6 +2771,33 @@ document.addEventListener("DOMContentLoaded", function () {
     document
       .getElementById("return-filter-date")
       .addEventListener("change", (e) => renderReturnsList(e.target.value));
+    // NEW: Add keyboard navigation logic for return products
+    document
+      .getElementById("return-product-list")
+      .addEventListener("keydown", (e) => {
+        const activeElement = document.activeElement;
+        if (
+          activeElement &&
+          activeElement.tagName === "INPUT" &&
+          activeElement.type === "number"
+        ) {
+          const productInputs = document.querySelectorAll(
+            '#return-product-list input[type="number"]'
+          );
+          const currentIndex = Array.from(productInputs).indexOf(activeElement);
+          if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+            e.preventDefault();
+            if (currentIndex < productInputs.length - 1) {
+              productInputs[currentIndex + 1].focus();
+            }
+          } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            if (currentIndex > 0) {
+              productInputs[currentIndex - 1].focus();
+            }
+          }
+        }
+      });
   }
 
   function renderStoreOptionsForReturn() {
@@ -2817,10 +2898,10 @@ document.addEventListener("DOMContentLoaded", function () {
               item.quantity
             }</div>
               <div class="flex items-center space-x-2"><span>₹${(
-                item.price * item.quantity
-              ).toFixed(
-                2
-              )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromReturnCart(${index})">X</button></div>
+              item.price * item.quantity
+            ).toFixed(
+              2
+            )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromReturnCart(${index})">X</button></div>
           </div>`
           )
           .join("")
