@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let products = JSON.parse(localStorage.getItem("products")) || [];
   let orders = JSON.parse(localStorage.getItem("orders")) || [];
   let payments = JSON.parse(localStorage.getItem("payments")) || [];
-  let returns = JSON.parse(localStorage.getItem("returns")) || []; // NEW: For returns
+  let returns = JSON.parse(localStorage.getItem("returns")) || [];
   let agents = JSON.parse(localStorage.getItem("agents")) || [];
   let transportation = JSON.parse(localStorage.getItem("transportation")) || [];
   let pendingCommissions =
@@ -55,11 +55,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- STATE ---
   let cart = [];
-  let returnCart = []; // NEW: For managing returns
+  let returnCart = [];
   let passwordCallback = null;
   let loggedInUser = null;
-  let currentEditingOrderId = null; // State for editing an order
-  let currentEditingReturnId = null; // NEW: State for editing a return
+  let currentEditingOrderId = null;
+  let currentEditingReturnId = null;
 
   // --- DATA PERSISTENCE ---
   const saveData = () => {
@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem("products", JSON.stringify(products));
     localStorage.setItem("orders", JSON.stringify(orders));
     localStorage.setItem("payments", JSON.stringify(payments));
-    localStorage.setItem("returns", JSON.stringify(returns)); // NEW
+    localStorage.setItem("returns", JSON.stringify(returns));
     localStorage.setItem("agents", JSON.stringify(agents));
     localStorage.setItem("transportation", JSON.stringify(transportation));
     localStorage.setItem(
@@ -79,7 +79,6 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // --- PAGE TEMPLATES ---
-  // MODIFIED: Order page template updated to include the entire Return Management section
   const templates = {
     dashboard: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard</h2>
@@ -202,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div id="return-product-list" class="bg-white p-4 rounded-xl shadow-md space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto"></div>
                     </div>
                 </div>
-                  <div class="mt-8">
+                    <div class="mt-8">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                         <h3 class="text-2xl font-bold text-gray-800">Return Reports</h3>
                           <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
@@ -235,8 +234,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                     <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
                                <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
-                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
-                                 Share
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+                                   Share
                                </button>
                                <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download Bill</button>
                     </div>
@@ -512,9 +511,32 @@ document.addEventListener("DOMContentLoaded", function () {
     const fileName = `Momo_Soup_Orders_${today}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
+  
+  // --- Data Sanitization on Init ---
+  const sanitizeData = () => {
+    products.forEach(p => p.price = parseFloat(p.price) || 0);
+    orders.forEach(o => {
+      o.itemsTotal = parseFloat(o.itemsTotal) || 0;
+      o.transportCharge = parseFloat(o.transportCharge) || 0;
+      o.storeCommission = parseFloat(o.storeCommission) || 0;
+      o.total = parseFloat(o.total) || 0;
+    });
+    payments.forEach(p => {
+      p.cashAmount = parseFloat(p.cashAmount) || 0;
+      p.onlineAmount = parseFloat(p.onlineAmount) || 0;
+    });
+    returns.forEach(r => {
+      r.totalReturnValue = parseFloat(r.totalReturnValue) || 0;
+      r.commissionAdjustment = parseFloat(r.commissionAdjustment) || 0;
+    });
+    pendingCommissions.forEach(c => c.commissionAmount = parseFloat(c.commissionAmount) || 0);
+    paidCommissions.forEach(c => c.commissionAmount = parseFloat(c.commissionAmount) || 0);
+    saveData();
+  };
 
   // --- INITIALIZATION ---
   const init = () => {
+    sanitizeData(); // Ensure all numbers are correctly parsed
     renderPage("dashboard");
     // Attach event listeners for the new modal
     editPaymentForm.addEventListener("submit", handleEditPayment);
@@ -689,7 +711,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const today = new Date().toISOString().slice(0, 10);
     document.getElementById("return-filter-date").value = today;
     renderReturnsList(today);
-    // NEW: Add keyboard navigation logic for return products
+    // FIX: Corrected keyboard navigation logic to move one step at a time
     document
       .getElementById("return-product-list")
       .addEventListener("keydown", (e) => {
@@ -702,16 +724,19 @@ document.addEventListener("DOMContentLoaded", function () {
           const productInputs = document.querySelectorAll(
             '#return-product-list input[type="number"]'
           );
-          const currentIndex = Array.from(productInputs).indexOf(activeElement);
-          if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          const parentDivs = Array.from(productInputs).map(input => input.closest('div'));
+          const activeParent = activeElement.closest('div');
+          const currentIndex = parentDivs.indexOf(activeParent);
+          
+          if (e.key === "ArrowDown") {
             e.preventDefault();
-            if (currentIndex < productInputs.length - 1) {
-              productInputs[currentIndex + 1].focus();
+            if (currentIndex < parentDivs.length - 1) {
+              parentDivs[currentIndex + 1].querySelector('input[type="number"]').focus();
             }
-          } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          } else if (e.key === "ArrowUp") {
             e.preventDefault();
             if (currentIndex > 0) {
-              productInputs[currentIndex - 1].focus();
+              parentDivs[currentIndex - 1].querySelector('input[type="number"]').focus();
             }
           }
         }
@@ -1129,6 +1154,9 @@ document.addEventListener("DOMContentLoaded", function () {
       ? agentPendingCommissions
           .map((c) => {
             const commissionRate = agent?.commissions[c.storeName] || 0;
+            const amountText = c.commissionAmount >= 0 ? `₹${c.commissionAmount.toFixed(2)}` : `-₹${(-c.commissionAmount).toFixed(2)}`;
+            const actionButton = c.commissionAmount >= 0 ? `<button class="text-green-600 hover:text-green-800 font-semibold" onclick="payCommission('${c.orderId || c.returnId}')">Pay</button>` : '';
+
             return `
                         <tr class="hover:bg-gray-50">
                             <td class="p-4">${new Date(
@@ -1136,12 +1164,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             ).toLocaleDateString()}</td>
                             <td class="p-4">${c.storeName}</td>
                             <td class="p-4">${commissionRate}%</td>
-                            <td class="p-4 font-semibold">₹${c.commissionAmount.toFixed(
-                              2
-                            )}</td>
-                            <td class="p-4"><button class="text-green-600 hover:text-green-800 font-semibold" onclick="payCommission('${
-                              c.orderId
-                            }')">Pay</button></td>
+                            <td class="p-4 font-semibold">${amountText}</td>
+                            <td class="p-4">${actionButton}</td>
                         </tr>
                         `;
           })
@@ -1283,7 +1307,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const formData = new FormData(e.target);
     products.push({
       productName: formData.get("productName"),
-      price: parseFloat(formData.get("price")).toFixed(2),
+      price: parseFloat(formData.get("price")),
     });
     saveData();
     renderProducts();
@@ -1352,7 +1376,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       saveData();
       alert("Order updated successfully!");
-      cancelEdit(); // Reset UI
+      cancelEdit();
       renderTodaysOrders();
     } else {
       // --- CREATE NEW ORDER LOGIC ---
@@ -1410,20 +1434,17 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     const store = stores.find((s) => s.storeName === storeName);
+
+    // Filter orders and returns for the selected date
     const relevantOrders = orders.filter((o) => {
       const orderDate = new Date(o.date).toISOString().slice(0, 10);
       return o.storeName === storeName && orderDate === billDate;
     });
 
-    // Get returns for the same day
     const relevantReturns = returns.filter((r) => {
       const returnDate = new Date(r.date).toISOString().slice(0, 10);
       return r.storeName === storeName && returnDate === billDate;
     });
-    const totalReturnValue = relevantReturns.reduce(
-      (sum, r) => sum + r.totalReturnValue,
-      0
-    );
 
     if (relevantOrders.length === 0 && relevantReturns.length === 0) {
       alert(
@@ -1446,42 +1467,77 @@ document.addEventListener("DOMContentLoaded", function () {
       (sum, p) => sum + (p.onlineAmount || 0),
       0
     );
+    
+    const previousDue = calculateDue(storeName, billDate, false);
+    const currentDueAmount = calculateDue(storeName, billDate, true);
 
-    // Previous due calculation now accounts for past returns
-    const totalOrderedBefore = orders
-      .filter(
-        (o) => o.storeName === storeName && o.date.slice(0, 10) < billDate
-      )
-      .reduce(
-        (sum, o) => sum + (o.total - o.itemsTotal * (o.storeCommission / 100)),
-        0
-      );
-    const totalPaidBefore = payments
-      .filter(
-        (p) => p.storeName === storeName && p.date.slice(0, 10) < billDate
-      )
-      .reduce((sum, p) => sum + (p.cashAmount || 0) + (p.onlineAmount || 0), 0);
-    const totalReturnedBefore = returns
-      .filter(
-        (r) => r.storeName === storeName && r.date.slice(0, 10) < billDate
-      )
-      .reduce((sum, r) => sum + r.totalReturnValue, 0);
-
-    const previousDue =
-      totalOrderedBefore - totalPaidBefore - totalReturnedBefore;
-    const dueAmount = calculateDue(storeName);
     const billOutput = document.getElementById("bill-output");
 
-    // Re-generating HTML for the returns section (this was the part I previously removed)
+    // Generate HTML for orders
+    let ordersHtml = "";
+    if (relevantOrders.length > 0) {
+      ordersHtml = `
+            <h3 class="text-lg font-semibold border-b pb-2 mb-4">Orders</h3>
+            ${relevantOrders
+              .map((order) => {
+                const storeCommissionValue =
+                  order.itemsTotal * (order.storeCommission / 100);
+                return `
+                <div class="mb-4 border-b pb-4">
+                    <p><strong>Order Time:</strong> ${new Date(
+                      order.date
+                    ).toLocaleString()}</p>
+                    <table class="w-full text-sm mt-2">
+                        <thead><tr class="border-b"><th class="text-left py-1">Item</th><th class="text-right py-1">Qty</th><th class="text-right py-1">Price</th><th class="text-right py-1">Total</th></tr></thead>
+                        <tbody>${order.items
+                          .map(
+                            (item) =>
+                              `<tr><td class="py-1">${
+                                item.productName
+                              }</td><td class="text-right py-1">${
+                                item.quantity
+                              }</td><td class="text-right py-1">₹${
+                                item.price
+                              }</td><td class="text-right py-1">₹${(
+                                item.quantity * item.price
+                              ).toFixed(2)}</td></tr>`
+                          )
+                          .join("")}</tbody>
+                    </table>
+                    <div class="text-right mt-2 space-y-1">
+                        <p class="font-semibold">Items Total: ₹${order.itemsTotal.toFixed(
+                          2
+                        )}</p>
+                        <p class="text-sm">Transport: + ₹${order.transportCharge.toFixed(
+                          2
+                        )}</p>
+                        <p class="text-sm text-red-500">Store Commission: - ₹${storeCommissionValue.toFixed(
+                          2
+                        )}</p>
+                        <p class="font-bold text-lg">Order Net Total: ₹${(
+                          order.total - storeCommissionValue
+                        ).toFixed(2)}</p>
+                    </div>
+                </div>`;
+              })
+              .join("")}`;
+    } else {
+      ordersHtml = `<h3 class="text-lg font-semibold border-b pb-2 mb-4">Orders</h3><p class='text-gray-500'>No orders for this day.</p>`;
+    }
+
+    // Generate HTML for returns
     let returnsHtml = "";
     if (relevantReturns.length > 0) {
+      const combinedReturnItems = relevantReturns.flatMap(r => r.items);
+      const totalReturnValue = relevantReturns.reduce((sum, r) => sum + r.totalReturnValue, 0);
+      const totalReturnCommission = relevantReturns.reduce((sum, r) => sum + r.commissionAdjustment, 0);
+
       returnsHtml = `
             <h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3>
             <table class="w-full text-sm mt-2">
                 <thead><tr class="border-b"><th class="text-left py-1">Item</th><th class="text-right py-1">Qty</th><th class="text-right py-1">Price</th><th class="text-right py-1">Total</th></tr></thead>
                 <tbody>
-                    ${relevantReturns
-                      .flatMap((r) => r.items)
+                    ${combinedReturnItems
                       .map(
                         (item) =>
                           `<tr><td class="py-1">${
@@ -1498,90 +1554,45 @@ document.addEventListener("DOMContentLoaded", function () {
                 </tbody>
             </table>
             <div class="text-right mt-2 space-y-1">
-                <p class="font-bold text-lg text-red-500">Total Return Value: - ₹${totalReturnValue.toFixed(
+                <p class="font-semibold">Returned Value: ₹${totalReturnValue.toFixed(
                   2
                 )}</p>
+                <p class="text-sm text-green-600">Commission Reversal: + ₹${totalReturnCommission.toFixed(2)}</p>
+                <p class="font-bold text-lg text-red-500">Net Return Value: - ₹${(totalReturnValue - totalReturnCommission).toFixed(2)}</p>
             </div>
         `;
+    } else {
+      returnsHtml = `<h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3><p class="text-gray-500">No returns for this day.</p>`;
     }
 
     billOutput.innerHTML = `
-          <div class="relative min-h-[300px]">
-              <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="bill-watermark">
-              <div class="flex items-center space-x-2 mb-4">
-                  <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="h-12 w-12">
-                  <h2 class="text-xl font-bold">Bill for ${storeName}</h2>
-              </div>
-              <p class="text-gray-600 mb-4">Date: ${new Date(
-                billDate
-              ).toLocaleDateString("en-GB")}</p>
-              <h3 class="text-lg font-semibold border-b pb-2 mb-4">Orders</h3>
-              ${
-                relevantOrders.length > 0
-                  ? relevantOrders
-                      .map((order) => {
-                        const storeCommissionValue =
-                          order.itemsTotal * (order.storeCommission / 100);
-                        return `
-                  <div class="mb-4 border-b pb-4">
-                      <p><strong>Order Time:</strong> ${new Date(
-                        order.date
-                      ).toLocaleString()}</p>
-                      <table class="w-full text-sm mt-2">
-                          <thead><tr class="border-b"><th class="text-left py-1">Item</th><th class="text-right py-1">Qty</th><th class="text-right py-1">Price</th><th class="text-right py-1">Total</th></tr></thead>
-                          <tbody>${order.items
-                            .map(
-                              (item) =>
-                                `<tr><td class="py-1">${
-                                  item.productName
-                                }</td><td class="text-right py-1">${
-                                  item.quantity
-                                }</td><td class="text-right py-1">₹${
-                                  item.price
-                                }</td><td class="text-right py-1">₹${(
-                                  item.quantity * item.price
-                                ).toFixed(2)}</td></tr>`
-                            )
-                            .join("")}</tbody>
-                      </table>
-                      <div class="text-right mt-2 space-y-1">
-                          <p class="font-semibold">Items Total: ₹${order.itemsTotal.toFixed(
-                            2
-                          )}</p>
-                          <p class="text-sm">Transport: + ₹${order.transportCharge.toFixed(
-                            2
-                          )}</p>
-                          <p class="text-sm text-red-500">Store Commission: - ₹${storeCommissionValue.toFixed(
-                            2
-                          )}</p>
-                          <p class="font-bold text-lg">Order Net Total: ₹${(
-                            order.total - storeCommissionValue
-                          ).toFixed(2)}</p>
-                      </div>
-                  </div>`;
-                      })
-                      .join("")
-                  : "<p class='text-gray-500'>No orders for this day.</p>"
-              }
-              
-              ${returnsHtml}
-
-              <div class="border-t mt-8 pt-4">
-                  <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary</h3>
-                  <div class="text-right space-y-1">
-                      <p>Paid by Cash: ₹${cashPaid.toFixed(2)}</p>
-                      <p>Paid by Online: ₹${onlinePaid.toFixed(2)}</p>
-                  </div>
-              </div>
-              <div class="border-t mt-8 pt-4 text-right">
-                  <p class="text-lg">Total Previous Due: ₹${previousDue.toFixed(
-                    2
-                  )}</p>
-                  <p class="text-2xl font-bold mt-4">Current Due Amount: ₹${dueAmount.toFixed(
-                    2
-                  )}</p>
-              </div>
-          </div>
+            <div class="relative min-h-[300px]">
+                <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="bill-watermark">
+                <div class="flex items-center space-x-2 mb-4">
+                    <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="h-12 w-12">
+                    <h2 class="text-xl font-bold">Bill for ${storeName}</h2>
+                </div>
+                <p class="text-gray-600 mb-4">Date: ${new Date(
+                  billDate
+                ).toLocaleDateString("en-GB")}</p>
+                ${ordersHtml}
+                ${returnsHtml}
+                <div class="border-t mt-8 pt-4">
+                    <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary</h3>
+                    <div class="text-right space-y-1">
+                        <p>Paid by Cash: ₹${cashPaid.toFixed(2)}</p>
+                        <p>Paid by Online: ₹${onlinePaid.toFixed(2)}</p>
+                    </div>
+                </div>
+                <div class="border-t mt-8 pt-4 text-right">
+                    <p class="text-lg">Total Previous Due: ₹${previousDue.toFixed(
+                      2
+                    )}</p>
+                    <p class="text-2xl font-bold mt-4">Current Due Amount: ₹${currentDueAmount.toFixed(
+                      2
+                    )}</p>
+                </div>
+            </div>
         `;
     document.getElementById("bill-output-container").classList.remove("hidden");
     
@@ -1654,7 +1665,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Pending Commissions
     if (agentPendingCommissions.length > 0) {
       reportData.push(["Pending Commissions"]);
-      reportData.push(["Order Date", "Store", "Commission (%)", "Amount (₹)"]);
+      reportData.push(["Order/Return Date", "Store", "Commission (%)", "Amount (₹)"]);
       const totalPending = agentPendingCommissions.reduce(
         (sum, c) => sum + c.commissionAmount,
         0
@@ -1776,7 +1787,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Show current due
-    const due = calculateDue(storeName);
+    const due = calculateDue(storeName, new Date().toISOString().slice(0, 10), true);
     storeDueInfo.textContent = `Current Due for ${storeName}: ₹${due.toFixed(
       2
     )}`;
@@ -1797,7 +1808,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const startDate = document.getElementById(
       "order-download-start-date"
     ).value;
-    const endDate = document.getElementById("order-download-end-date").value;
+    const endDate = document.getElementById(
+      "order-download-end-date"
+    ).value;
     if (!startDate || !endDate) {
       alert("Please select a start and end date for the report.");
       return;
@@ -1874,34 +1887,34 @@ document.addEventListener("DOMContentLoaded", function () {
     tempDiv.style.fontFamily = "Inter, sans-serif";
 
     let content = `
-              <div style="text-align: center; margin-bottom: 20px;">
-                  <img src="image_6a1dd8.png" alt="CastleMOMO Logo" style="width: 100px; height: auto; margin: 0 auto 15px; display: block;">
-                  <h1 style="font-size: 24px; font-weight: bold;">${storeName}</h1>
-                  <p style="font-size: 16px; color: #6b7280;">Order Report for ${new Date(
-                    date
-                  ).toLocaleDateString("en-GB")}</p>
-              </div>
-              <table style="width: 100%; border-collapse: collapse;">
-                  <thead>
-                      <tr style="border-bottom: 1px solid #e5e7eb;">
-                          <th style="padding: 10px; text-align: left;">Item</th>
-                          <th style="padding: 10px; text-align: right;">Quantity</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      ${Object.entries(aggregatedItems)
-                        .map(
-                          ([item, quantity]) => `
-                      <tr>
-                          <td style="padding: 10px;">${item}</td>
-                          <td style="padding: 10px; text-align: right;">${quantity}</td>
-                      </tr>
-                  `
-                        )
-                        .join("")}
-                  </tbody>
-              </table>
-          `;
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img src="image_6a1dd8.png" alt="CastleMOMO Logo" style="width: 100px; height: auto; margin: 0 auto 15px; display: block;">
+                    <h1 style="font-size: 24px; font-weight: bold;">${storeName}</h1>
+                    <p style="font-size: 16px; color: #6b7280;">Order Report for ${new Date(
+                      date
+                    ).toLocaleDateString("en-GB")}</p>
+                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <th style="padding: 10px; text-align: left;">Item</th>
+                            <th style="padding: 10px; text-align: right;">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.entries(aggregatedItems)
+                          .map(
+                            ([item, quantity]) => `
+                        <tr>
+                            <td style="padding: 10px;">${item}</td>
+                            <td style="padding: 10px; text-align: right;">${quantity}</td>
+                        </tr>
+                    `
+                          )
+                          .join("")}
+                    </tbody>
+                </table>
+            `;
     tempDiv.innerHTML = content;
     document.body.appendChild(tempDiv);
     html2canvas(tempDiv, {
@@ -1956,30 +1969,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let hasData = false;
 
     for (const storeName of storesToProcess) {
-      const totalOrderedBefore = orders
-        .filter(
-          (o) => o.storeName === storeName && o.date.slice(0, 10) < startDateStr
-        )
-        .reduce(
-          (sum, o) =>
-            sum + (o.total - o.itemsTotal * (o.storeCommission / 100)),
-          0
-        );
-      const totalPaidBefore = payments
-        .filter(
-          (p) => p.storeName === storeName && p.date.slice(0, 10) < startDateStr
-        )
-        .reduce(
-          (sum, p) => sum + (p.cashAmount || 0) + (p.onlineAmount || 0),
-          0
-        );
-      const totalReturnedBefore = returns
-        .filter(
-          (r) => r.storeName === storeName && r.date.slice(0, 10) < startDateStr
-        )
-        .reduce((sum, r) => sum + r.totalReturnValue, 0);
-      let runningBalance =
-        totalOrderedBefore - totalPaidBefore - totalReturnedBefore;
+      let runningBalance = calculateDue(storeName, startDateStr, false);
 
       if (storeFilter === "all" && finalReportData.length > 1) {
         finalReportData.push([]);
@@ -2008,7 +1998,8 @@ document.addEventListener("DOMContentLoaded", function () {
         dailySummary[dateStr] = {
           bill: 0,
           cash: 0,
-          online: 0
+          online: 0,
+          returns: 0,
         };
       }
 
@@ -2047,28 +2038,25 @@ document.addEventListener("DOMContentLoaded", function () {
         )
         .forEach((r) => {
           const date = r.date.slice(0, 10);
-          dailySummary[date].bill -= r.totalReturnValue;
+          dailySummary[date].returns += r.totalReturnValue - r.commissionAdjustment;
         });
 
       Object.keys(dailySummary)
         .sort()
         .forEach((dateStr) => {
           const day = dailySummary[dateStr];
-          if (day.bill === 0 && day.cash === 0 && day.online === 0) {
+          const netChange = day.bill - day.returns - day.cash - day.online;
+          if (netChange === 0) {
             return;
           }
           hasData = true;
-          runningBalance += day.bill - day.cash - day.online;
+          runningBalance += netChange;
           finalReportData.push([
             new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-GB"),
             storeName,
-            day.bill > 0
-              ? day.bill.toFixed(2)
-              : day.bill < 0
-              ? `(${(-day.bill).toFixed(2)})`
-              : "",
-            day.cash > 0 ? day.cash.toFixed(2) : "",
-            day.online > 0 ? day.online.toFixed(2) : "",
+            (day.bill || "-").toFixed(2),
+            (day.cash || "-").toFixed(2),
+            (day.online || "-").toFixed(2),
             runningBalance.toFixed(2),
           ]);
         });
@@ -2398,7 +2386,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const index = document.getElementById("edit-product-index").value;
     products[index] = {
       productName: document.getElementById("edit-productName").value,
-      price: parseFloat(document.getElementById("edit-price").value).toFixed(2),
+      price: parseFloat(document.getElementById("edit-price").value),
     };
     saveData();
     renderProducts();
@@ -2475,25 +2463,36 @@ document.addEventListener("DOMContentLoaded", function () {
   cancelEditTransportationBtn.addEventListener("click", () =>
     editTransportationModal.classList.add("hidden")
   );
-  const calculateTotalOrdered = (storeName) => {
-    return orders
-      .filter((o) => o.storeName === storeName)
-      .reduce(
-        (sum, o) => sum + (o.total - o.itemsTotal * (o.storeCommission / 100)),
-        0
-      );
+  
+  const calculateDue = (storeName, date, inclusive = true) => {
+    const filterFn = (item) => {
+      const itemDate = item.date.slice(0, 10);
+      const isBeforeOrOn = inclusive ? itemDate <= date : itemDate < date;
+      return item.storeName === storeName && isBeforeOrOn;
+    };
+  
+    const ordersUpToDate = orders.filter(filterFn);
+    const returnsUpToDate = returns.filter(filterFn);
+    const paymentsUpToDate = payments.filter(filterFn);
+    
+    // Sum of all bills (orders)
+    const totalOrderValue = ordersUpToDate.reduce((sum, o) => {
+        const netOrderTotal = (o.itemsTotal + o.transportCharge) - (o.itemsTotal * (o.storeCommission / 100));
+        return sum + netOrderTotal;
+    }, 0);
+
+    // Sum of all returns (reducing the due amount)
+    const totalReturnValue = returnsUpToDate.reduce((sum, r) => {
+      const netReturnTotal = r.totalReturnValue - r.commissionAdjustment;
+      return sum + netReturnTotal;
+    }, 0);
+
+    // Sum of all payments
+    const totalPaid = paymentsUpToDate.reduce((sum, p) => sum + (p.cashAmount + p.onlineAmount), 0);
+  
+    return totalOrderValue - totalReturnValue - totalPaid;
   };
-  // MODIFIED: Due calculation now includes returns
-  const calculateDue = (storeName) => {
-    const totalOrderedValue = calculateTotalOrdered(storeName);
-    const totalPaid = payments
-      .filter((p) => p.storeName === storeName)
-      .reduce((sum, p) => sum + (p.cashAmount || 0) + (p.onlineAmount || 0), 0);
-    const totalReturned = returns
-      .filter((r) => r.storeName === storeName)
-      .reduce((sum, r) => sum + r.totalReturnValue, 0);
-    return totalOrderedValue - totalPaid - totalReturned;
-  };
+  
 
   // NEW: Updated function to generate and share bill as an image
   async function shareBillAsImage(storeName, billElement) {
@@ -2690,11 +2689,11 @@ document.addEventListener("DOMContentLoaded", function () {
         "order-submit-buttons"
       );
       orderSubmitButtons.innerHTML = `
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <button id="update-order-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Order</button>
-                    <button id="cancel-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
-                </div>
-            `;
+              <div class="flex flex-col sm:flex-row gap-2">
+                  <button id="update-order-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Order</button>
+                  <button id="cancel-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
+              </div>
+          `;
 
       document
         .getElementById("update-order-btn")
@@ -2771,7 +2770,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document
       .getElementById("return-filter-date")
       .addEventListener("change", (e) => renderReturnsList(e.target.value));
-    // NEW: Add keyboard navigation logic for return products
+    // FIX: Corrected keyboard navigation logic to move one step at a time
     document
       .getElementById("return-product-list")
       .addEventListener("keydown", (e) => {
@@ -2784,16 +2783,19 @@ document.addEventListener("DOMContentLoaded", function () {
           const productInputs = document.querySelectorAll(
             '#return-product-list input[type="number"]'
           );
-          const currentIndex = Array.from(productInputs).indexOf(activeElement);
-          if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          const parentDivs = Array.from(productInputs).map(input => input.closest('div'));
+          const activeParent = activeElement.closest('div');
+          const currentIndex = parentDivs.indexOf(activeParent);
+          
+          if (e.key === "ArrowDown") {
             e.preventDefault();
-            if (currentIndex < productInputs.length - 1) {
-              productInputs[currentIndex + 1].focus();
+            if (currentIndex < parentDivs.length - 1) {
+              parentDivs[currentIndex + 1].querySelector('input[type="number"]').focus();
             }
-          } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          } else if (e.key === "ArrowUp") {
             e.preventDefault();
             if (currentIndex > 0) {
-              productInputs[currentIndex - 1].focus();
+              parentDivs[currentIndex - 1].querySelector('input[type="number"]').focus();
             }
           }
         }
@@ -2947,6 +2949,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
       originalReturn.items = returnCart;
       originalReturn.totalReturnValue = totalReturnValue;
+      originalReturn.commissionAdjustment = totalReturnValue * (stores.find(s => s.storeName === originalReturn.storeName)?.storeCommission / 100) || 0;
+      
+      const commIndex = pendingCommissions.findIndex(c => c.returnId === originalReturn.returnId);
+      if(commIndex > -1){
+        pendingCommissions[commIndex].commissionAmount = -originalReturn.commissionAdjustment;
+      }
 
       saveData();
       alert("Return updated successfully!");
@@ -2955,7 +2963,8 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       // Create new return logic
       const storeName = document.getElementById("return-store-select").value;
-      if (!storeName || returnCart.length === 0) {
+      const store = stores.find(s => s.storeName === storeName);
+      if (!store || returnCart.length === 0) {
         alert("Please select a store and add items to the return cart.");
         return;
       }
@@ -2965,6 +2974,7 @@ document.addEventListener("DOMContentLoaded", function () {
         0
       );
       const returnId = Date.now().toString();
+      const commissionAdjustment = totalReturnValue * (store.storeCommission / 100) || 0;
 
       const newReturn = {
         returnId,
@@ -2972,9 +2982,23 @@ document.addEventListener("DOMContentLoaded", function () {
         storeName,
         items: returnCart,
         totalReturnValue,
+        commissionAdjustment
       };
 
       returns.push(newReturn);
+
+      // Record a negative commission entry for the agent
+      const agent = agents.find(a => a.commissions.hasOwnProperty(storeName));
+      if(agent){
+        pendingCommissions.push({
+          agentName: agent.agentName,
+          storeName: newReturn.storeName,
+          returnId: newReturn.returnId,
+          date: newReturn.date,
+          commissionAmount: -commissionAdjustment
+        });
+      }
+
       saveData();
       alert("Return recorded successfully!");
       returnCart = [];
@@ -3039,11 +3063,11 @@ document.addEventListener("DOMContentLoaded", function () {
         "return-submit-buttons"
       );
       returnSubmitButtons.innerHTML = `
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <button id="update-return-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Return</button>
-                    <button id="cancel-return-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
-                </div>
-            `;
+              <div class="flex flex-col sm:flex-row gap-2">
+                  <button id="update-return-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Return</button>
+                  <button id="cancel-return-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
+              </div>
+          `;
       document
         .getElementById("update-return-btn")
         .addEventListener("click", handleSubmitReturn);
@@ -3062,6 +3086,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       if (confirm("Are you sure you want to delete this return record?")) {
         returns.splice(returnIndex, 1);
+        const commIndex = pendingCommissions.findIndex(c => c.returnId === returnId);
+        if(commIndex > -1){
+          pendingCommissions.splice(commIndex, 1);
+        }
         saveData();
         renderReturnsList(document.getElementById("return-filter-date").value);
         alert("Return record deleted.");
