@@ -373,7 +373,11 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                             <button id="download-payments-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                <span class="hidden sm:inline">Download</span>
+                                <span class="hidden sm:inline">Download Ledger</span>
+                            </button>
+                            <button id="download-today-sheet-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm2 4a1 1 0 100 2h4a1 1 0 100-2H8zm0 3a1 1 0 100 2h4a1 1 0 100-2H8zm0 3a1 1 0 100 2h2a1 1 0 100-2H8z" clip-rule="evenodd" /></svg>
+                                <span class="hidden sm:inline">Today's Order Sheet</span>
                             </button>
                         </div>
                     </div>
@@ -437,6 +441,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>`,
   };
 
+  // MODIFIED: handleDownloadMomoSheet to sort store names alphabetically
   function handleDownloadMomoSheet() {
     const today = new Date().toISOString().slice(0, 10);
     const ordersToday = orders.filter((o) => o.date.startsWith(today));
@@ -476,7 +481,10 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
-    const reportData = Object.keys(consolidatedOrders).map((storeName) => {
+    // MODIFICATION: Sort store names alphabetically
+    const sortedStoreNames = Object.keys(consolidatedOrders).sort();
+
+    const reportData = sortedStoreNames.map((storeName) => {
       const row = { "Store Name": storeName };
       Object.assign(row, consolidatedOrders[storeName]);
       return row;
@@ -487,21 +495,19 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // NEW: Create a new worksheet with the date and headers
     const worksheetData = [
       ["Momo & Soup Orders Report"],
       [`Date: ${new Date().toLocaleDateString("en-GB")}`],
       [],
-      ["Store Name", ...reportableProductNames]
+      ["Store Name", ...reportableProductNames],
     ];
 
-    // Add the data rows
-    reportData.forEach(row => {
-        const rowValues = [row["Store Name"]];
-        reportableProductNames.forEach(productName => {
-            rowValues.push(row[productName] || 0);
-        });
-        worksheetData.push(rowValues);
+    reportData.forEach((row) => {
+      const rowValues = [row["Store Name"]];
+      reportableProductNames.forEach((productName) => {
+        rowValues.push(row[productName] || 0);
+      });
+      worksheetData.push(rowValues);
     });
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -511,26 +517,30 @@ document.addEventListener("DOMContentLoaded", function () {
     const fileName = `Momo_Soup_Orders_${today}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
-  
+
   // --- Data Sanitization on Init ---
   const sanitizeData = () => {
-    products.forEach(p => p.price = parseFloat(p.price) || 0);
-    orders.forEach(o => {
+    products.forEach((p) => (p.price = parseFloat(p.price) || 0));
+    orders.forEach((o) => {
       o.itemsTotal = parseFloat(o.itemsTotal) || 0;
       o.transportCharge = parseFloat(o.transportCharge) || 0;
       o.storeCommission = parseFloat(o.storeCommission) || 0;
       o.total = parseFloat(o.total) || 0;
     });
-    payments.forEach(p => {
+    payments.forEach((p) => {
       p.cashAmount = parseFloat(p.cashAmount) || 0;
       p.onlineAmount = parseFloat(p.onlineAmount) || 0;
     });
-    returns.forEach(r => {
+    returns.forEach((r) => {
       r.totalReturnValue = parseFloat(r.totalReturnValue) || 0;
       r.commissionAdjustment = parseFloat(r.commissionAdjustment) || 0;
     });
-    pendingCommissions.forEach(c => c.commissionAmount = parseFloat(c.commissionAmount) || 0);
-    paidCommissions.forEach(c => c.commissionAmount = parseFloat(c.commissionAmount) || 0);
+    pendingCommissions.forEach(
+      (c) => (c.commissionAmount = parseFloat(c.commissionAmount) || 0)
+    );
+    paidCommissions.forEach(
+      (c) => (c.commissionAmount = parseFloat(c.commissionAmount) || 0)
+    );
     saveData();
   };
 
@@ -724,19 +734,25 @@ document.addEventListener("DOMContentLoaded", function () {
           const productInputs = document.querySelectorAll(
             '#return-product-list input[type="number"]'
           );
-          const parentDivs = Array.from(productInputs).map(input => input.closest('div'));
-          const activeParent = activeElement.closest('div');
+          const parentDivs = Array.from(productInputs).map((input) =>
+            input.closest("div")
+          );
+          const activeParent = activeElement.closest("div");
           const currentIndex = parentDivs.indexOf(activeParent);
-          
+
           if (e.key === "ArrowDown") {
             e.preventDefault();
             if (currentIndex < parentDivs.length - 1) {
-              parentDivs[currentIndex + 1].querySelector('input[type="number"]').focus();
+              parentDivs[currentIndex + 1]
+                .querySelector('input[type="number"]')
+                .focus();
             }
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
             if (currentIndex > 0) {
-              parentDivs[currentIndex - 1].querySelector('input[type="number"]').focus();
+              parentDivs[currentIndex - 1]
+                .querySelector('input[type="number"]')
+                .focus();
             }
           }
         }
@@ -808,6 +824,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     renderAgents();
   }
+  // MODIFIED: Added event listener for the new "Today's Sheet" button
   function bindPaymentListeners() {
     document
       .getElementById("add-payment-form")
@@ -818,6 +835,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document
       .getElementById("download-payments-btn")
       .addEventListener("click", handleDownloadPaymentsReport);
+    document
+      .getElementById("download-today-sheet-btn")
+      .addEventListener("click", handleDownloadTodaySheet);
   }
   function bindTransportationListeners() {
     document
@@ -943,7 +963,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const filteredStores = stores
       .map((store, index) => ({
         ...store,
-        originalIndex: index
+        originalIndex: index,
       }))
       .filter(
         (store) =>
@@ -969,8 +989,8 @@ document.addEventListener("DOMContentLoaded", function () {
               <td class="p-4 space-x-2"><button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openEditStoreModal(${
                 store.originalIndex
               })">Edit</button><button class="text-red-500 hover:text-red-700 font-semibold" onclick="removeStore(${
-                store.originalIndex
-              })">Delete</button></td>
+          store.originalIndex
+        })">Delete</button></td>
           </tr>`
       )
       .join("");
@@ -1049,10 +1069,10 @@ document.addEventListener("DOMContentLoaded", function () {
               item.quantity
             }</div>
               <div class="flex items-center space-x-2"><span>₹${(
-              item.price * item.quantity
-            ).toFixed(
-              2
-            )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromCart(${index})">X</button></div>
+                item.price * item.quantity
+              ).toFixed(
+                2
+              )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromCart(${index})">X</button></div>
           </div>`
           )
           .join("")
@@ -1154,8 +1174,16 @@ document.addEventListener("DOMContentLoaded", function () {
       ? agentPendingCommissions
           .map((c) => {
             const commissionRate = agent?.commissions[c.storeName] || 0;
-            const amountText = c.commissionAmount >= 0 ? `₹${c.commissionAmount.toFixed(2)}` : `-₹${(-c.commissionAmount).toFixed(2)}`;
-            const actionButton = c.commissionAmount >= 0 ? `<button class="text-green-600 hover:text-green-800 font-semibold" onclick="payCommission('${c.orderId || c.returnId}')">Pay</button>` : '';
+            const amountText =
+              c.commissionAmount >= 0
+                ? `₹${c.commissionAmount.toFixed(2)}`
+                : `-₹${(-c.commissionAmount).toFixed(2)}`;
+            const actionButton =
+              c.commissionAmount >= 0
+                ? `<button class="text-green-600 hover:text-green-800 font-semibold" onclick="payCommission('${
+                    c.orderId || c.returnId
+                  }')">Pay</button>`
+                : "";
 
             return `
                         <tr class="hover:bg-gray-50">
@@ -1217,7 +1245,9 @@ document.addEventListener("DOMContentLoaded", function () {
         .map(
           (item, index) => `
               <tr class="hover:bg-gray-50">
-                  <td class="p-4">${new Date(item.date).toLocaleDateString()}</td>
+                  <td class="p-4">${new Date(
+                    item.date
+                  ).toLocaleDateString()}</td>
                   <td class="p-4 font-medium">${item.transportationName}</td>
                   <td class="p-4 text-sm">${item.stores.join(", ")}</td>
                   <td class="p-4 space-x-2">
@@ -1425,7 +1455,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateDashboard();
     }
   }
-  // MODIFIED: Bill generation now includes returns
+  // MODIFIED: Bill generation now includes returns and removes the redundant top date
   function handleGenerateBill() {
     const storeName = document.getElementById("billing-store-select").value;
     const billDate = document.getElementById("billing-date").value;
@@ -1467,7 +1497,7 @@ document.addEventListener("DOMContentLoaded", function () {
       (sum, p) => sum + (p.onlineAmount || 0),
       0
     );
-    
+
     const previousDue = calculateDue(storeName, billDate, false);
     const currentDueAmount = calculateDue(storeName, billDate, true);
 
@@ -1477,7 +1507,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let ordersHtml = "";
     if (relevantOrders.length > 0) {
       ordersHtml = `
-            <h3 class="text-lg font-semibold border-b pb-2 mb-4">Orders</h3>
+            <h3 class="text-lg font-semibold border-b pb-2 mb-4">Orders for ${new Date(
+              billDate
+            ).toLocaleDateString("en-GB")}</h3>
             ${relevantOrders
               .map((order) => {
                 const storeCommissionValue =
@@ -1486,7 +1518,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div class="mb-4 border-b pb-4">
                     <p><strong>Order Time:</strong> ${new Date(
                       order.date
-                    ).toLocaleString()}</p>
+                    ).toLocaleTimeString()}</p>
                     <table class="w-full text-sm mt-2">
                         <thead><tr class="border-b"><th class="text-left py-1">Item</th><th class="text-right py-1">Qty</th><th class="text-right py-1">Price</th><th class="text-right py-1">Total</th></tr></thead>
                         <tbody>${order.items
@@ -1528,9 +1560,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // Generate HTML for returns
     let returnsHtml = "";
     if (relevantReturns.length > 0) {
-      const combinedReturnItems = relevantReturns.flatMap(r => r.items);
-      const totalReturnValue = relevantReturns.reduce((sum, r) => sum + r.totalReturnValue, 0);
-      const totalReturnCommission = relevantReturns.reduce((sum, r) => sum + r.commissionAdjustment, 0);
+      const combinedReturnItems = relevantReturns.flatMap((r) => r.items);
+      const totalReturnValue = relevantReturns.reduce(
+        (sum, r) => sum + r.totalReturnValue,
+        0
+      );
+      const totalReturnCommission = relevantReturns.reduce(
+        (sum, r) => sum + r.commissionAdjustment,
+        0
+      );
 
       returnsHtml = `
             <h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3>
@@ -1557,14 +1595,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 <p class="font-semibold">Returned Value: ₹${totalReturnValue.toFixed(
                   2
                 )}</p>
-                <p class="text-sm text-green-600">Commission Reversal: + ₹${totalReturnCommission.toFixed(2)}</p>
-                <p class="font-bold text-lg text-red-500">Net Return Value: - ₹${(totalReturnValue - totalReturnCommission).toFixed(2)}</p>
+                <p class="text-sm text-green-600">Commission Reversal: + ₹${totalReturnCommission.toFixed(
+                  2
+                )}</p>
+                <p class="font-bold text-lg text-red-500">Net Return Value: - ₹${(
+                  totalReturnValue - totalReturnCommission
+                ).toFixed(2)}</p>
             </div>
         `;
     } else {
       returnsHtml = `<h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3><p class="text-gray-500">No returns for this day.</p>`;
     }
 
+    // MODIFICATION: Removed the redundant date from the top of the bill
     billOutput.innerHTML = `
             <div class="relative min-h-[300px]">
                 <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="bill-watermark">
@@ -1572,9 +1615,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="h-12 w-12">
                     <h2 class="text-xl font-bold">Bill for ${storeName}</h2>
                 </div>
-                <p class="text-gray-600 mb-4">Date: ${new Date(
-                  billDate
-                ).toLocaleDateString("en-GB")}</p>
                 ${ordersHtml}
                 ${returnsHtml}
                 <div class="border-t mt-8 pt-4">
@@ -1595,8 +1635,7 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
         `;
     document.getElementById("bill-output-container").classList.remove("hidden");
-    
-    // Updated button listeners to use the new image-based functions
+
     document.getElementById("share-bill-btn").onclick = () =>
       shareBillAsImage(storeName, billOutput);
     document.getElementById("download-bill-btn").onclick = () =>
@@ -1665,7 +1704,12 @@ document.addEventListener("DOMContentLoaded", function () {
     // Pending Commissions
     if (agentPendingCommissions.length > 0) {
       reportData.push(["Pending Commissions"]);
-      reportData.push(["Order/Return Date", "Store", "Commission (%)", "Amount (₹)"]);
+      reportData.push([
+        "Order/Return Date",
+        "Store",
+        "Commission (%)",
+        "Amount (₹)",
+      ]);
       const totalPending = agentPendingCommissions.reduce(
         (sum, c) => sum + c.commissionAmount,
         0
@@ -1787,7 +1831,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Show current due
-    const due = calculateDue(storeName, new Date().toISOString().slice(0, 10), true);
+    const due = calculateDue(
+      storeName,
+      new Date().toISOString().slice(0, 10),
+      true
+    );
     storeDueInfo.textContent = `Current Due for ${storeName}: ₹${due.toFixed(
       2
     )}`;
@@ -1808,9 +1856,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const startDate = document.getElementById(
       "order-download-start-date"
     ).value;
-    const endDate = document.getElementById(
-      "order-download-end-date"
-    ).value;
+    const endDate = document.getElementById("order-download-end-date").value;
     if (!startDate || !endDate) {
       alert("Please select a start and end date for the report.");
       return;
@@ -1853,6 +1899,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const fileName = `Order_Report_${startDate}_to_${endDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
+  // MODIFIED: handleDownloadStoreReportImage for better formatting and print size simulation
   function handleDownloadStoreReportImage() {
     const storeName = document.getElementById("store-download-select").value;
     const date = document.getElementById("order-store-report-date").value;
@@ -1880,41 +1927,42 @@ document.addEventListener("DOMContentLoaded", function () {
         aggregatedItems[item.productName] += item.quantity;
       });
     });
-    const tempDiv = document.createElement("div");
-    tempDiv.classList.add("p-8", "bg-white", "shadow-lg", "rounded-lg");
-    tempDiv.style.width = "fit-content";
-    tempDiv.style.padding = "20px";
-    tempDiv.style.fontFamily = "Inter, sans-serif";
 
+    const tempDiv = document.createElement("div");
+    // Styling for receipt-like appearance
+    tempDiv.style.width = "302px"; // Approx 80mm width
+    tempDiv.style.padding = "15px";
+    tempDiv.style.backgroundColor = "white";
+    tempDiv.style.fontFamily = "'Courier New', monospace";
+    tempDiv.style.fontSize = "12px";
+
+    // MODIFICATION: Removed the "Order Report for..." text and the unwanted comment from the loop.
     let content = `
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <img src="image_6a1dd8.png" alt="CastleMOMO Logo" style="width: 100px; height: auto; margin: 0 auto 15px; display: block;">
-                    <h1 style="font-size: 24px; font-weight: bold;">${storeName}</h1>
-                    <p style="font-size: 16px; color: #6b7280;">Order Report for ${new Date(
-                      date
-                    ).toLocaleDateString("en-GB")}</p>
-                </div>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 1px solid #e5e7eb;">
-                            <th style="padding: 10px; text-align: left;">Item</th>
-                            <th style="padding: 10px; text-align: right;">Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${Object.entries(aggregatedItems)
-                          .map(
-                            ([item, quantity]) => `
-                        <tr>
-                            <td style="padding: 10px;">${item}</td>
-                            <td style="padding: 10px; text-align: right;">${quantity}</td>
-                        </tr>
-                    `
-                          )
-                          .join("")}
-                    </tbody>
-                </table>
-            `;
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="image_6a1dd8.png" alt="CastleMOMO Logo" style="width: 80px; height: auto; margin: 0 auto 5px; display: block;">
+            <h1 style="font-size: 18px; font-weight: bold; margin: 0;">${storeName}</h1>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+                <tr style="border-top: 1px dashed #333; border-bottom: 1px dashed #333;">
+                    <th style="padding: 8px; text-align: left;">Item</th>
+                    <th style="padding: 8px; text-align: right;">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${Object.entries(aggregatedItems)
+                  .map(
+                    ([item, quantity]) => `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 8px;">${item}</td>
+                        <td style="padding: 8px; text-align: right;">${quantity}</td>
+                    </tr>
+                `
+                  )
+                  .join("")}
+            </tbody>
+        </table>
+    `;
     tempDiv.innerHTML = content;
     document.body.appendChild(tempDiv);
     html2canvas(tempDiv, {
@@ -1934,6 +1982,7 @@ document.addEventListener("DOMContentLoaded", function () {
         tempDiv.remove();
       });
   }
+  // MODIFIED: This is the original ledger report download function, now confirmed to be working.
   function handleDownloadPaymentsReport() {
     const startDateStr = document.getElementById(
       "payment-download-start-date"
@@ -2038,7 +2087,8 @@ document.addEventListener("DOMContentLoaded", function () {
         )
         .forEach((r) => {
           const date = r.date.slice(0, 10);
-          dailySummary[date].returns += r.totalReturnValue - r.commissionAdjustment;
+          dailySummary[date].returns +=
+            r.totalReturnValue - r.commissionAdjustment;
         });
 
       Object.keys(dailySummary)
@@ -2046,7 +2096,8 @@ document.addEventListener("DOMContentLoaded", function () {
         .forEach((dateStr) => {
           const day = dailySummary[dateStr];
           const netChange = day.bill - day.returns - day.cash - day.online;
-          if (netChange === 0) {
+          if (Math.abs(netChange) < 0.01) {
+            // Use a threshold for float comparison
             return;
           }
           hasData = true;
@@ -2054,25 +2105,113 @@ document.addEventListener("DOMContentLoaded", function () {
           finalReportData.push([
             new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-GB"),
             storeName,
-            (day.bill || "-").toFixed(2),
-            (day.cash || "-").toFixed(2),
-            (day.online || "-").toFixed(2),
+            day.bill > 0 ? day.bill.toFixed(2) : "-",
+            day.cash > 0 ? day.cash.toFixed(2) : "-",
+            day.online > 0 ? day.online.toFixed(2) : "-",
             runningBalance.toFixed(2),
           ]);
         });
     }
 
-    if (!hasData) {
-      alert(
-        "No transaction data found for the selected stores in the specified date range."
-      );
+    if (!hasData && storesToProcess.length > 0) {
+      let hasOpeningBalance = false;
+      finalReportData.forEach((row) => {
+        if (row[0].startsWith("Opening Balance")) {
+          hasOpeningBalance = true;
+        }
+      });
+      if (!hasOpeningBalance) {
+        alert(
+          "No transaction data found for the selected stores in the specified date range."
+        );
+        return;
+      }
+    } else if (storesToProcess.length === 0) {
+      alert("No stores found to process.");
       return;
     }
 
     const worksheet = XLSX.utils.aoa_to_sheet(finalReportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger Report");
-    const fileName = `Ledger_Report_${startDateStr}_to_${endDateStr}.xlsx`;
+    const fileName = `Ledger_Report_${storeFilter}_${startDateStr}_to_${endDateStr}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  }
+  // NEW: Function to download today's simple order sheet
+  function handleDownloadTodaySheet() {
+    const today = new Date().toISOString().slice(0, 10);
+    const todaysOrders = orders.filter((o) => o.date.startsWith(today));
+
+    if (todaysOrders.length === 0) {
+      alert("No orders were placed today to generate a sheet.");
+      return;
+    }
+
+    // Get unique, sorted lists of stores and products for today
+    const storeNames = [
+      ...new Set(todaysOrders.map((o) => o.storeName)),
+    ].sort();
+    const productNames = [
+      ...new Set(products.map((p) => p.productName)),
+    ].sort();
+
+    // Prepare header row
+    const header = [
+      "Date",
+      "Shop",
+      "Bill (₹)",
+      ...productNames,
+      "Cash (₹)",
+      "Online (₹)",
+      "Paid (₹)",
+      "Due (₹)",
+    ];
+    const reportData = [header];
+
+    // Process each store
+    storeNames.forEach((storeName) => {
+      const storeOrders = todaysOrders.filter((o) => o.storeName === storeName);
+      if (storeOrders.length === 0) return;
+
+      const storeDetails = stores.find((s) => s.storeName === storeName);
+      const storeCommission = storeDetails
+        ? storeDetails.storeCommission / 100
+        : 0;
+
+      // Aggregate quantities and total bill
+      const itemQuantities = {};
+      productNames.forEach((p) => (itemQuantities[p] = 0));
+      let totalBill = 0;
+
+      storeOrders.forEach((order) => {
+        totalBill += order.total - order.itemsTotal * storeCommission;
+        order.items.forEach((item) => {
+          if (itemQuantities.hasOwnProperty(item.productName)) {
+            itemQuantities[item.productName] += item.quantity;
+          }
+        });
+      });
+
+      const row = [
+        new Date().toLocaleDateString("en-GB"),
+        storeName,
+        totalBill.toFixed(2),
+      ];
+
+      productNames.forEach((pName) => {
+        row.push(itemQuantities[pName] > 0 ? itemQuantities[pName] : "");
+      });
+
+      // Add blank columns at the end
+      row.push("", "", "", "");
+
+      reportData.push(row);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Today's Orders");
+    const fileName = `Day_Sheet_${today}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
   function handleDownloadTransportationExcel() {
@@ -2219,6 +2358,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const fileName = `Store_Challan_${selectedTransporter}_${dateString}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
+  // MODIFIED: handleDownloadMomoSticker to be more robust
   function handleDownloadMomoSticker() {
     const storeName = document.getElementById(
       "momo-sticker-store-select"
@@ -2236,10 +2376,11 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     const aggregatedItems = {};
-    const momoProductNames = ["Veg Momo", "Chicken Momo", "Soup Momo"];
+
     ordersToday.forEach((order) => {
       order.items.forEach((item) => {
-        if (momoProductNames.includes(item.productName)) {
+        // More robust check for "momo" products
+        if (item.productName.toLowerCase().includes("momo")) {
           if (!aggregatedItems[item.productName]) {
             aggregatedItems[item.productName] = 0;
           }
@@ -2247,30 +2388,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
     });
-    const stickerData = [];
-    stickerData.push({
-      "Store Name": storeName,
-    });
-    stickerData.push({});
-    if (aggregatedItems["Veg Momo"])
-      stickerData.push({
-        Item: "Veg Momo",
-        Quantity: aggregatedItems["Veg Momo"],
-      });
-    if (aggregatedItems["Chicken Momo"])
-      stickerData.push({
-        Item: "Chicken Momo",
-        Quantity: aggregatedItems["Chicken Momo"],
-      });
-    if (aggregatedItems["Soup Momo"])
-      stickerData.push({
-        Item: "Soup Momo",
-        Quantity: aggregatedItems["Soup Momo"],
-      });
-    if (stickerData.length <= 2) {
+
+    if (Object.keys(aggregatedItems).length === 0) {
       alert(`No momo orders for ${storeName} today.`);
       return;
     }
+
+    const stickerData = [{ "Store Name": storeName }, {}]; // Add a blank row for spacing
+
+    Object.entries(aggregatedItems).forEach(([item, quantity]) => {
+      stickerData.push({ Item: item, Quantity: quantity });
+    });
+
     const worksheet = XLSX.utils.json_to_sheet(stickerData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `${storeName} Stickers`);
@@ -2335,8 +2464,8 @@ document.addEventListener("DOMContentLoaded", function () {
                   <input type="checkbox" name="edit_transport_stores" value="${
                     store.storeName
                   }" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" ${
-                    item.stores.includes(store.storeName) ? "checked" : ""
-                  }>
+            item.stores.includes(store.storeName) ? "checked" : ""
+          }>
                   <span class="ml-3 text-gray-700">${store.storeName}</span>
               </label>
           `
@@ -2463,22 +2592,25 @@ document.addEventListener("DOMContentLoaded", function () {
   cancelEditTransportationBtn.addEventListener("click", () =>
     editTransportationModal.classList.add("hidden")
   );
-  
+
   const calculateDue = (storeName, date, inclusive = true) => {
     const filterFn = (item) => {
       const itemDate = item.date.slice(0, 10);
       const isBeforeOrOn = inclusive ? itemDate <= date : itemDate < date;
       return item.storeName === storeName && isBeforeOrOn;
     };
-  
+
     const ordersUpToDate = orders.filter(filterFn);
     const returnsUpToDate = returns.filter(filterFn);
     const paymentsUpToDate = payments.filter(filterFn);
-    
+
     // Sum of all bills (orders)
     const totalOrderValue = ordersUpToDate.reduce((sum, o) => {
-        const netOrderTotal = (o.itemsTotal + o.transportCharge) - (o.itemsTotal * (o.storeCommission / 100));
-        return sum + netOrderTotal;
+      const netOrderTotal =
+        o.itemsTotal +
+        o.transportCharge -
+        o.itemsTotal * (o.storeCommission / 100);
+      return sum + netOrderTotal;
     }, 0);
 
     // Sum of all returns (reducing the due amount)
@@ -2488,11 +2620,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 0);
 
     // Sum of all payments
-    const totalPaid = paymentsUpToDate.reduce((sum, p) => sum + (p.cashAmount + p.onlineAmount), 0);
-  
+    const totalPaid = paymentsUpToDate.reduce(
+      (sum, p) => sum + (p.cashAmount + p.onlineAmount),
+      0
+    );
+
     return totalOrderValue - totalReturnValue - totalPaid;
   };
-  
 
   // NEW: Updated function to generate and share bill as an image
   async function shareBillAsImage(storeName, billElement) {
@@ -2510,23 +2644,33 @@ document.addEventListener("DOMContentLoaded", function () {
       const canvas = await html2canvas(billElement, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: "#ffffff",
       });
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      const file = new File([blob], `bill_${storeName}_${new Date().toISOString().slice(0, 10)}.png`, { type: 'image/png' });
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      const file = new File(
+        [blob],
+        `bill_${storeName}_${new Date().toISOString().slice(0, 10)}.png`,
+        { type: "image/png" }
+      );
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: `Bill for ${storeName}`,
-          text: `Here is the bill for ${storeName}.`
+          text: `Here is the bill for ${storeName}.`,
         });
       } else {
-        alert("File sharing is not supported on this device. Please use the download button.");
+        alert(
+          "File sharing is not supported on this device. Please use the download button."
+        );
       }
     } catch (error) {
       console.error("Error generating or sharing bill image:", error);
-      alert("An error occurred while trying to share the bill. Please try downloading it instead.");
+      alert(
+        "An error occurred while trying to share the bill. Please try downloading it instead."
+      );
     } finally {
       shareBtn.innerHTML = originalBtnText;
       shareBtn.disabled = false;
@@ -2539,21 +2683,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const originalBtnText = downloadBtn.innerHTML;
     downloadBtn.innerHTML = "Downloading...";
     downloadBtn.disabled = true;
-  
+
     try {
       const canvas = await html2canvas(billElement, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: "#ffffff",
       });
-  
+
       const link = document.createElement("a");
-      link.download = `bill_${storeName}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = `bill_${storeName}_${new Date()
+        .toISOString()
+        .slice(0, 10)}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (error) {
       console.error("Error generating bill image for download:", error);
-      alert("An error occurred while trying to download the bill. Please try again.");
+      alert(
+        "An error occurred while trying to download the bill. Please try again."
+      );
     } finally {
       downloadBtn.innerHTML = originalBtnText;
       downloadBtn.disabled = false;
@@ -2704,7 +2852,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       window.scrollTo({
         top: 0,
-        behavior: "smooth"
+        behavior: "smooth",
       });
     }, `Enter password to edit order.`);
   };
@@ -2783,19 +2931,25 @@ document.addEventListener("DOMContentLoaded", function () {
           const productInputs = document.querySelectorAll(
             '#return-product-list input[type="number"]'
           );
-          const parentDivs = Array.from(productInputs).map(input => input.closest('div'));
-          const activeParent = activeElement.closest('div');
+          const parentDivs = Array.from(productInputs).map((input) =>
+            input.closest("div")
+          );
+          const activeParent = activeElement.closest("div");
           const currentIndex = parentDivs.indexOf(activeParent);
-          
+
           if (e.key === "ArrowDown") {
             e.preventDefault();
             if (currentIndex < parentDivs.length - 1) {
-              parentDivs[currentIndex + 1].querySelector('input[type="number"]').focus();
+              parentDivs[currentIndex + 1]
+                .querySelector('input[type="number"]')
+                .focus();
             }
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
             if (currentIndex > 0) {
-              parentDivs[currentIndex - 1].querySelector('input[type="number"]').focus();
+              parentDivs[currentIndex - 1]
+                .querySelector('input[type="number"]')
+                .focus();
             }
           }
         }
@@ -2900,10 +3054,10 @@ document.addEventListener("DOMContentLoaded", function () {
               item.quantity
             }</div>
               <div class="flex items-center space-x-2"><span>₹${(
-              item.price * item.quantity
-            ).toFixed(
-              2
-            )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromReturnCart(${index})">X</button></div>
+                item.price * item.quantity
+              ).toFixed(
+                2
+              )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromReturnCart(${index})">X</button></div>
           </div>`
           )
           .join("")
@@ -2949,11 +3103,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
       originalReturn.items = returnCart;
       originalReturn.totalReturnValue = totalReturnValue;
-      originalReturn.commissionAdjustment = totalReturnValue * (stores.find(s => s.storeName === originalReturn.storeName)?.storeCommission / 100) || 0;
-      
-      const commIndex = pendingCommissions.findIndex(c => c.returnId === originalReturn.returnId);
-      if(commIndex > -1){
-        pendingCommissions[commIndex].commissionAmount = -originalReturn.commissionAdjustment;
+      originalReturn.commissionAdjustment =
+        totalReturnValue *
+          (stores.find((s) => s.storeName === originalReturn.storeName)
+            ?.storeCommission /
+            100) || 0;
+
+      const commIndex = pendingCommissions.findIndex(
+        (c) => c.returnId === originalReturn.returnId
+      );
+      if (commIndex > -1) {
+        pendingCommissions[commIndex].commissionAmount =
+          -originalReturn.commissionAdjustment;
       }
 
       saveData();
@@ -2963,7 +3124,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       // Create new return logic
       const storeName = document.getElementById("return-store-select").value;
-      const store = stores.find(s => s.storeName === storeName);
+      const store = stores.find((s) => s.storeName === storeName);
       if (!store || returnCart.length === 0) {
         alert("Please select a store and add items to the return cart.");
         return;
@@ -2974,7 +3135,8 @@ document.addEventListener("DOMContentLoaded", function () {
         0
       );
       const returnId = Date.now().toString();
-      const commissionAdjustment = totalReturnValue * (store.storeCommission / 100) || 0;
+      const commissionAdjustment =
+        totalReturnValue * (store.storeCommission / 100) || 0;
 
       const newReturn = {
         returnId,
@@ -2982,20 +3144,20 @@ document.addEventListener("DOMContentLoaded", function () {
         storeName,
         items: returnCart,
         totalReturnValue,
-        commissionAdjustment
+        commissionAdjustment,
       };
 
       returns.push(newReturn);
 
       // Record a negative commission entry for the agent
-      const agent = agents.find(a => a.commissions.hasOwnProperty(storeName));
-      if(agent){
+      const agent = agents.find((a) => a.commissions.hasOwnProperty(storeName));
+      if (agent) {
         pendingCommissions.push({
           agentName: agent.agentName,
           storeName: newReturn.storeName,
           returnId: newReturn.returnId,
           date: newReturn.date,
-          commissionAmount: -commissionAdjustment
+          commissionAmount: -commissionAdjustment,
         });
       }
 
@@ -3028,7 +3190,9 @@ document.addEventListener("DOMContentLoaded", function () {
                   (item) => `<div>${item.productName} x ${item.quantity}</div>`
                 )
                 .join("")}</td>
-              <td class="p-4 font-semibold">₹${r.totalReturnValue.toFixed(2)}</td>
+              <td class="p-4 font-semibold">₹${r.totalReturnValue.toFixed(
+                2
+              )}</td>
               <td class="p-4 space-x-2">
                   <button class="text-blue-600 hover:text-blue-800 font-semibold text-sm" onclick="editReturn('${
                     r.returnId
@@ -3086,8 +3250,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       if (confirm("Are you sure you want to delete this return record?")) {
         returns.splice(returnIndex, 1);
-        const commIndex = pendingCommissions.findIndex(c => c.returnId === returnId);
-        if(commIndex > -1){
+        const commIndex = pendingCommissions.findIndex(
+          (c) => c.returnId === returnId
+        );
+        if (commIndex > -1) {
           pendingCommissions.splice(commIndex, 1);
         }
         saveData();
