@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let paidCommissions =
     JSON.parse(localStorage.getItem("paidCommissions")) || [];
   let ownerPassword = localStorage.getItem("ownerPassword") || null;
+  // MODIFIED: Added duePayments array
+  let duePayments = JSON.parse(localStorage.getItem("duePayments")) || [];
 
   // --- DOM ELEMENTS ---
 
@@ -76,6 +78,8 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     localStorage.setItem("paidCommissions", JSON.stringify(paidCommissions));
     localStorage.setItem("ownerPassword", ownerPassword);
+    // MODIFIED: Save the new duePayments array
+    localStorage.setItem("duePayments", JSON.stringify(duePayments));
   };
 
   // --- PAGE TEMPLATES ---
@@ -234,7 +238,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                     <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
                                <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
                                    Share
                                </button>
                                <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download Bill</button>
@@ -330,8 +334,22 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                 </div>`;
     },
+    // MODIFIED: Added a new form for 'Due Payments'
     payment: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Payment Handling</h2>
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Record a Due Payment</h3>
+                    <form id="add-due-payment-form" class="space-y-4">
+                        <select id="due-payment-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                            <option value="">Select Store</option>
+                        </select>
+                        <div>
+                            <label for="dueAmount" class="block text-sm font-medium text-gray-700">Due Amount (₹)</label>
+                            <input type="number" step="0.01" name="dueAmount" id="dueAmount" placeholder="Due Amount" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                        </div>
+                        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Due Payment</button>
+                    </form>
+                </div>
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Record a Payment</h3>
                     <form id="add-payment-form" class="space-y-4">
@@ -377,7 +395,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             </button>
                             <button id="download-today-sheet-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm2 4a1 1 0 100 2h4a1 1 0 100-2H8zm0 3a1 1 0 100 2h4a1 1 0 100-2H8zm0 3a1 1 0 100 2h2a1 1 0 100-2H8z" clip-rule="evenodd" /></svg>
-                                <span class="hidden sm:inline">Today's Order Sheet</span>
+                                <span class="hidden sm:inline">Today's Payment Sheet</span>
                             </button>
                         </div>
                     </div>
@@ -530,6 +548,10 @@ document.addEventListener("DOMContentLoaded", function () {
     payments.forEach((p) => {
       p.cashAmount = parseFloat(p.cashAmount) || 0;
       p.onlineAmount = parseFloat(p.onlineAmount) || 0;
+    });
+    // MODIFIED: Added sanitization for due payments
+    duePayments.forEach((dp) => {
+      dp.amount = parseFloat(dp.amount) || 0;
     });
     returns.forEach((r) => {
       r.totalReturnValue = parseFloat(r.totalReturnValue) || 0;
@@ -824,8 +846,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     renderAgents();
   }
-  // MODIFIED: Added event listener for the new "Today's Sheet" button
+  // MODIFIED: Added event listener for the new 'Add Due Payment' form
   function bindPaymentListeners() {
+    const addDuePaymentForm = document.getElementById("add-due-payment-form");
+    if (addDuePaymentForm) {
+      addDuePaymentForm.addEventListener("submit", handleAddDuePayment);
+    }
     document
       .getElementById("add-payment-form")
       .addEventListener("submit", handleAddPayment);
@@ -1069,10 +1095,10 @@ document.addEventListener("DOMContentLoaded", function () {
               item.quantity
             }</div>
               <div class="flex items-center space-x-2"><span>₹${(
-                item.price * item.quantity
-              ).toFixed(
-                2
-              )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromCart(${index})">X</button></div>
+              item.price * item.quantity
+            ).toFixed(
+              2
+            )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromCart(${index})">X</button></div>
           </div>`
           )
           .join("")
@@ -1259,8 +1285,12 @@ document.addEventListener("DOMContentLoaded", function () {
         .join("") ||
       `<tr><td colspan="4" class="text-center p-4 text-gray-500">No transportation assigned yet.</td></tr>`;
   };
+  // MODIFIED: Added `due-payment-store-select` and updated `payment-download-store-select`
   const renderPaymentsPage = () => {
     const paymentStoreSelect = document.getElementById("payment-store-select");
+    const duePaymentStoreSelect = document.getElementById(
+      "due-payment-store-select"
+    );
     const paymentDownloadStoreSelect = document.getElementById(
       "payment-download-store-select"
     );
@@ -1273,17 +1303,20 @@ document.addEventListener("DOMContentLoaded", function () {
       .join("");
     paymentStoreSelect.innerHTML =
       "<option value=''>Select Store</option>" + allStoreOptions;
+    if (duePaymentStoreSelect) {
+      duePaymentStoreSelect.innerHTML =
+        "<option value=''>Select Store</option>" + allStoreOptions;
+    }
     if (paymentDownloadStoreSelect) {
       const allStoresInvolved = [
         ...new Set([
           ...orders.map((o) => o.storeName),
           ...payments.map((p) => p.storeName),
+          ...duePayments.map((dp) => dp.storeName),
         ]),
       ].sort();
       const paymentStoreOptions = allStoresInvolved
-        .map(
-          (storeName) => `<option value="${storeName}">${storeName}</option>`
-        )
+        .map((storeName) => `<option value="${storeName}">${storeName}</option>`)
         .join("");
       paymentDownloadStoreSelect.innerHTML =
         "<option value='all'>All Stores</option>" + paymentStoreOptions;
@@ -1606,34 +1639,45 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       returnsHtml = `<h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3><p class="text-gray-500">No returns for this day.</p>`;
     }
+    // MODIFIED: Bill generation now includes due payments
+    const previousDuePayment = duePayments.find(
+      (dp) => dp.storeName === storeName
+    );
 
-    // MODIFICATION: Removed the redundant date from the top of the bill
+    let duePaymentHtml = "";
+    if (previousDuePayment) {
+      duePaymentHtml = `<p class="text-lg">Previous Due Payment Added: ₹${previousDuePayment.amount.toFixed(
+        2
+      )}</p>`;
+    }
+
     billOutput.innerHTML = `
-            <div class="relative min-h-[300px]">
-                <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="bill-watermark">
-                <div class="flex items-center space-x-2 mb-4">
-                    <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="h-12 w-12">
-                    <h2 class="text-xl font-bold">Bill for ${storeName}</h2>
-                </div>
-                ${ordersHtml}
-                ${returnsHtml}
-                <div class="border-t mt-8 pt-4">
-                    <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary</h3>
-                    <div class="text-right space-y-1">
-                        <p>Paid by Cash: ₹${cashPaid.toFixed(2)}</p>
-                        <p>Paid by Online: ₹${onlinePaid.toFixed(2)}</p>
+                <div class="relative min-h-[300px]">
+                    <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="bill-watermark">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="h-12 w-12">
+                        <h2 class="text-xl font-bold">Bill for ${storeName}</h2>
+                    </div>
+                    ${ordersHtml}
+                    ${returnsHtml}
+                    <div class="border-t mt-8 pt-4">
+                        <h3 class="text-lg font-semibold border-b pb-2 mb-4">Payment Summary</h3>
+                        <div class="text-right space-y-1">
+                            <p>Paid by Cash: ₹${cashPaid.toFixed(2)}</p>
+                            <p>Paid by Online: ₹${onlinePaid.toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <div class="border-t mt-8 pt-4 text-right">
+                        ${duePaymentHtml}
+                        <p class="text-lg">Total Previous Due: ₹${previousDue.toFixed(
+                          2
+                        )}</p>
+                        <p class="text-2xl font-bold mt-4">Current Due Amount: ₹${currentDueAmount.toFixed(
+                          2
+                        )}</p>
                     </div>
                 </div>
-                <div class="border-t mt-8 pt-4 text-right">
-                    <p class="text-lg">Total Previous Due: ₹${previousDue.toFixed(
-                      2
-                    )}</p>
-                    <p class="text-2xl font-bold mt-4">Current Due Amount: ₹${currentDueAmount.toFixed(
-                      2
-                    )}</p>
-                </div>
-            </div>
-        `;
+            `;
     document.getElementById("bill-output-container").classList.remove("hidden");
 
     document.getElementById("share-bill-btn").onclick = () =>
@@ -1816,6 +1860,32 @@ document.addEventListener("DOMContentLoaded", function () {
     e.target.reset();
     document.getElementById("store-due-info").classList.add("hidden");
     document.getElementById("store-order-total-info").classList.add("hidden");
+  }
+  // NEW: handleAddDuePayment function
+  function handleAddDuePayment(e) {
+    e.preventDefault();
+    const storeName = document.getElementById("due-payment-store-select").value;
+    const dueAmount = parseFloat(document.getElementById("dueAmount").value);
+    if (!storeName || isNaN(dueAmount) || dueAmount <= 0) {
+      alert("Please select a store and enter a valid due amount.");
+      return;
+    }
+    const existingDuePaymentIndex = duePayments.findIndex(
+      (dp) => dp.storeName === storeName
+    );
+    if (existingDuePaymentIndex > -1) {
+      duePayments[existingDuePaymentIndex].amount += dueAmount;
+    } else {
+      duePayments.push({
+        storeName,
+        amount: dueAmount,
+        date: new Date().toISOString(),
+      });
+    }
+    saveData();
+    alert(`Due payment of ₹${dueAmount} added for ${storeName}.`);
+    renderPaymentsPage();
+    e.target.reset();
   }
   function handlePaymentStoreSelect(e) {
     const storeName = e.target.value;
@@ -2018,6 +2088,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let hasData = false;
 
     for (const storeName of storesToProcess) {
+      // MODIFIED: `calculateDue` now accepts `duePayments` to include them in the calculation
       let runningBalance = calculateDue(storeName, startDateStr, false);
 
       if (storeFilter === "all" && finalReportData.length > 1) {
@@ -2593,6 +2664,7 @@ document.addEventListener("DOMContentLoaded", function () {
     editTransportationModal.classList.add("hidden")
   );
 
+  // MODIFIED: `calculateDue` now includes a check for due payments and adds them to the starting balance.
   const calculateDue = (storeName, date, inclusive = true) => {
     const filterFn = (item) => {
       const itemDate = item.date.slice(0, 10);
@@ -2603,6 +2675,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const ordersUpToDate = orders.filter(filterFn);
     const returnsUpToDate = returns.filter(filterFn);
     const paymentsUpToDate = payments.filter(filterFn);
+
+    const initialDue = duePayments
+      .filter((dp) => dp.storeName === storeName)
+      .reduce((sum, dp) => sum + dp.amount, 0);
 
     // Sum of all bills (orders)
     const totalOrderValue = ordersUpToDate.reduce((sum, o) => {
@@ -2625,7 +2701,7 @@ document.addEventListener("DOMContentLoaded", function () {
       0
     );
 
-    return totalOrderValue - totalReturnValue - totalPaid;
+    return initialDue + totalOrderValue - totalReturnValue - totalPaid;
   };
 
   // NEW: Updated function to generate and share bill as an image
@@ -2837,10 +2913,10 @@ document.addEventListener("DOMContentLoaded", function () {
         "order-submit-buttons"
       );
       orderSubmitButtons.innerHTML = `
-              <div class="flex flex-col sm:flex-row gap-2">
-                  <button id="update-order-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Order</button>
-                  <button id="cancel-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
-              </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button id="update-order-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Order</button>
+                <button id="cancel-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
+            </div>
           `;
 
       document
@@ -3054,10 +3130,10 @@ document.addEventListener("DOMContentLoaded", function () {
               item.quantity
             }</div>
               <div class="flex items-center space-x-2"><span>₹${(
-                item.price * item.quantity
-              ).toFixed(
-                2
-              )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromReturnCart(${index})">X</button></div>
+              item.price * item.quantity
+            ).toFixed(
+              2
+            )}</span><button class="text-red-500 text-xs font-bold" onclick="removeFromReturnCart(${index})">X</button></div>
           </div>`
           )
           .join("")
@@ -3227,10 +3303,10 @@ document.addEventListener("DOMContentLoaded", function () {
         "return-submit-buttons"
       );
       returnSubmitButtons.innerHTML = `
-              <div class="flex flex-col sm:flex-row gap-2">
-                  <button id="update-return-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Return</button>
-                  <button id="cancel-return-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
-              </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button id="update-return-btn" class="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold">Update Return</button>
+                <button id="cancel-return-edit-btn" class="w-full bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold">Cancel Edit</button>
+            </div>
           `;
       document
         .getElementById("update-return-btn")
