@@ -103,82 +103,78 @@ document.addEventListener("DOMContentLoaded", function () {
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Product Management</h2>
                 <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Product</h3><form id="add-product-form" class="space-y-4"><input type="text" name="productName" placeholder="Product Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="number" step="0.01" name="price" placeholder="Price" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Product</button></form></div>
                 <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">All Products</h3><div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">#</th><th class="p-4 font-semibold text-sm">Name</th><th class="p-4 font-semibold text-sm">Price ₹</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="products-table-body" class="divide-y divide-gray-200"></tbody></table></div>`,
-    order: () => `
-                <h2 class="text-3xl font-bold text-gray-800 mb-6">Order Management</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div>
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4">Place a New Order</h3>
-                            <form id="place-order-form" class="space-y-4">
-                                <select id="order-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select Store</option></select>
-                            </form>
+   order: () => `
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">Order Management</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Place a New Order</h3>
+                    <form id="place-order-form" class="space-y-4">
+                        <select id="order-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select Store</option></select>
+                    </form>
+                </div>
+                <div id="cart-section" class="bg-white p-6 rounded-xl shadow-md mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>Cart</h3>
+                    <div id="cart-items" class="space-y-2 min-h-[80px]"></div>
+                    <div class="mt-4 text-right border-t pt-4">
+                        <p class="font-bold text-lg">Total: <span id="cart-total">₹0.00</span></p>
+                        <div id="order-submit-buttons" class="mt-4">
+                            <button id="place-order-btn" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Place Order</button>
                         </div>
-                        <div id="cart-section" class="bg-white p-6 rounded-xl shadow-md mt-8">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>Cart</h3>
-                            <div id="cart-items" class="space-y-2 min-h-[80px]"></div>
-                            <div class="mt-4 text-right border-t pt-4">
-                                <p class="font-bold text-lg">Total: <span id="cart-total">₹0.00</span></p>
-                                <div id="order-submit-buttons" class="mt-4">
-                                    <button id="place-order-btn" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Place Order</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Products</h3>
-                        <div id="order-product-list" class="bg-white p-4 rounded-xl shadow-md space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto"></div>
                     </div>
                 </div>
-                <div class="mt-8">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                        <h3 class="text-2xl font-bold text-gray-800">Order Reports</h3>
-                          <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
-                              <div class="w-full sm:w-auto">
-                                  <label for="order-download-start-date" class="block text-sm font-medium text-gray-700">From</label>
-                                  <input type="date" id="order-download-start-date" class="p-2 border border-gray-300 rounded-lg w-full">
-                              </div>
-                              <div class="w-full sm:w-auto">
-                                 <label for="order-download-end-date" class="block text-sm font-medium text-gray-700">To</label>
-                                 <input type="date" id="order-download-end-date" class="p-2 border border-gray-300 rounded-lg w-full">
-                              </div>
-                              <button id="download-orders-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                  <span class="hidden sm:inline">Download Report</span>
-                              </button>
-                              <button id="download-momo-sheet-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                  <span class="hidden sm:inline">Download Momo Sheet</span>
-                              </button>
-                          </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Store</th><th class="p-4 font-semibold text-sm">Customer</th><th class="p-4 font-semibold text-sm">Items</th><th class="p-4 font-semibold text-sm">Store Commission</th><th class="p-4 font-semibold text-sm">Order Total</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="todays-orders-table-body" class="divide-y divide-gray-200"></tbody></table></div>
-                    <div class="mt-8 flex flex-col sm:flex-row justify-end items-start sm:items-center mb-4 gap-4">
-                        <div class="w-full sm:w-auto">
-                            <label for="store-download-select" class="block text-sm font-medium text-gray-700">Select Store for Report</label>
-                            <select id="store-download-select" class="p-2 border border-gray-300 rounded-lg w-full">
-                                <option value="">Select a Store</option>
-                            </select>
-                        </div>
-                        <div class="w-full sm:w-auto">
-                            <label for="order-store-report-date" class="block text-sm font-medium text-gray-700">Date</label>
-                            <input type="date" id="order-store-report-date" class="p-2 border border-gray-300 rounded-lg w-full">
-                        </div>
-                        <button id="download-store-orders-img-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15.414 10.586a2 2 0 00-2.828-2.828L7 13.172V17h3.828l5.586-5.586a2 2 0 000-2.828zM14 6a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
-                            <span class="hidden sm:inline">Download Store Report Image</span>
-                        </button>
-                        <div class="w-full sm:w-auto">
-                            <label for="momo-sticker-store-select" class="block text-sm font-medium text-gray-700">Momo Sticker</label>
-                            <select id="momo-sticker-store-select" class="p-2 border border-gray-300 rounded-lg w-full">
-                                <option value="">Select Store</option>
-                            </select>
-                        </div>
-                        <button id="download-momo-sticker-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                            <span class="hidden sm:inline">Download Momo Sticker</span>
-                        </button>
-                    </div>
-                </div>`,
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Products</h3>
+                <div id="order-product-list" class="bg-white p-4 rounded-xl shadow-md space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto"></div>
+            </div>
+        </div>
+        <div class="mt-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                <h3 class="text-2xl font-bold text-gray-800">Order Reports</h3>
+                  <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
+                      <div class="w-full sm:w-auto">
+                          <label for="order-download-date" class="block text-sm font-medium text-gray-700">Select Date</label>
+                          <input type="date" id="order-download-date" class="p-2 border border-gray-300 rounded-lg w-full">
+                      </div>
+                      <button id="download-orders-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                          <span class="hidden sm:inline">Download Report</span>
+                      </button>
+                      <button id="download-momo-sheet-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                          <span class="hidden sm:inline">Download Momo Sheet</span>
+                      </button>
+                  </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Store</th><th class="p-4 font-semibold text-sm">Customer</th><th class="p-4 font-semibold text-sm">Items</th><th class="p-4 font-semibold text-sm">Store Commission</th><th class="p-4 font-semibold text-sm">Order Total</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="todays-orders-table-body" class="divide-y divide-gray-200"></tbody></table></div>
+            <div class="mt-8 flex flex-col sm:flex-row justify-end items-start sm:items-center mb-4 gap-4">
+                <div class="w-full sm:w-auto">
+                    <label for="store-download-select" class="block text-sm font-medium text-gray-700">Select Store for Report</label>
+                    <select id="store-download-select" class="p-2 border border-gray-300 rounded-lg w-full">
+                        <option value="">Select a Store</option>
+                    </select>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <label for="order-store-report-date" class="block text-sm font-medium text-gray-700">Date</label>
+                    <input type="date" id="order-store-report-date" class="p-2 border border-gray-300 rounded-lg w-full">
+                </div>
+                <button id="download-store-orders-img-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15.414 10.586a2 2 0 00-2.828-2.828L7 13.172V17h3.828l5.586-5.586a2 2 0 000-2.828zM14 6a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
+                    <span class="hidden sm:inline">Download Store Report Image</span>
+                </button>
+                <div class="w-full sm:w-auto">
+                    <label for="momo-sticker-store-select" class="block text-sm font-medium text-gray-700">Momo Sticker</label>
+                    <select id="momo-sticker-store-select" class="p-2 border border-gray-300 rounded-lg w-full">
+                        <option value="">Select Store</option>
+                    </select>
+                </div>
+                <button id="download-momo-sticker-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    <span class="hidden sm:inline">Download Sticker</span>
+                </button>
+            </div>
+        </div>`,
     return: () => `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Return Management</h2>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -401,62 +397,57 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                     <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Store</th><th class="p-4 font-semibold text-sm">Cash Amount (₹)</th><th class="p-4 font-semibold text-sm">Online Amount (₹)</th><th class="p-4 font-semibold text-sm">Total Amount (₹)</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="payments-table-body" class="divide-y divide-gray-200"></tbody></table></div>
                 </div>`,
-    transportation: () => `
-                <h2 class="text-3xl font-bold text-gray-800 mb-6">Transportation Management</h2>
-                <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-semibold mb-4">Assign Transportation</h3>
-                    <form id="add-transportation-form" class="space-y-4">
-                        <input type="text" name="transportationName" placeholder="Car/Person Name" class="w-full p-3 border border-gray-300 rounded-lg" required>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Stores</label>
-                            <div id="transportation-store-list" class="space-y-2 max-h-60 overflow-y-auto border p-4 rounded-lg">
-                                ${
-                                  stores
-                                    .map(
-                                      (store) =>
-                                        `<label class="flex items-center"><input type="checkbox" name="transport_stores" value="${store.storeName}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded"><span class="ml-3 text-gray-700">${store.storeName}</span></label>`
-                                    )
-                                    .join("") ||
-                                  '<p class="text-gray-500">No stores available.</p>'
-                                }
-                            </div>
-                        </div>
-                        <input type="text" id="edit-deliveryShopCode" placeholder="Delivery Shop Code" class="w-full p-3 border border-gray-300 rounded-lg">
-                        <div class="flex justify-end space-x-4">
-                            <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Assign</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="mt-8">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                        <h3 class="text-2xl font-bold text-gray-800">Transportation Assignments</h3>
-                        <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
-                            <div class="w-full sm:w-auto">
-                                <label for="transport-select-name" class="block text-sm font-medium text-gray-700">Select Transporter</label>
-                                <select id="transport-select-name" class="p-2 border border-gray-300 rounded-lg w-full">
-                                    <option value="all">All Transporters</option>
-                                </select>
-                            </div>
-                            <div class="w-full sm:w-auto">
-                                <label for="transport-download-start-date" class="block text-sm font-medium text-gray-700">From</label>
-                                <input type="date" id="transport-download-start-date" class="p-2 border border-gray-300 rounded-lg w-full">
-                            </div>
-                            <div class="w-full sm:w-auto">
-                               <label for="transport-download-end-date" class="block text-sm font-medium text-gray-700">To</label>
-                               <input type="date" id="transport-download-end-date" class="p-2 border border-gray-300 rounded-lg w-full">
-                            </div>
-                            <button id="download-transport-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                <span class="hidden sm:inline">Download Delivery Challan</span>
-                            </button>
-                            <button id="download-store-details-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                <span class="hidden sm:inline">Download Store Challan</span>
-                            </button>
-                        </div>
+    transportation: () => `<h2 class="text-3xl font-bold text-gray-800 mb-6">Transportation Management</h2>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-4">Assign Transportation</h3>
+            <form id="add-transportation-form" class="space-y-4">
+                <input type="text" name="transportationName" placeholder="Car/Person Name" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Stores</label>
+                    <div id="transportation-store-list" class="space-y-2 max-h-60 overflow-y-auto border p-4 rounded-lg">
+                        ${
+                          stores
+                            .map(
+                              (store) =>
+                                `<label class="flex items-center"><input type="checkbox" name="transport_stores" value="${store.storeName}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded"><span class="ml-3 text-gray-700">${store.storeName}</span></label>`
+                            )
+                            .join("") ||
+                          '<p class="text-gray-500">No stores available.</p>'
+                        }
                     </div>
-                    <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Name</th><th class="p-4 font-semibold text-sm">Assigned Stores</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="transportation-table-body" class="divide-y divide-gray-200"></tbody></table></div>
-                </div>`,
+                </div>
+                <input type="text" id="edit-deliveryShopCode" placeholder="Delivery Shop Code" class="w-full p-3 border border-gray-300 rounded-lg">
+                <div class="flex justify-end space-x-4">
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Assign</button>
+                </div>
+            </form>
+        </div>
+        <div class="mt-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                <h3 class="text-2xl font-bold text-gray-800">Transportation Assignments</h3>
+                <div class="flex flex-col sm:flex-row items-start sm:items-end gap-2 w-full sm:w-auto">
+                    <div class="w-full sm:w-auto">
+                        <label for="transport-select-name" class="block text-sm font-medium text-gray-700">Select Transporter</label>
+                        <select id="transport-select-name" class="p-2 border border-gray-300 rounded-lg w-full">
+                            <option value="all">All Transporters</option>
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <label for="transport-download-date" class="block text-sm font-medium text-gray-700">Select Date</label>
+                        <input type="date" id="transport-download-date" class="p-2 border border-gray-300 rounded-lg w-full">
+                    </div>
+                    <button id="download-transport-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        <span class="hidden sm:inline">Download Delivery Challan</span>
+                    </button>
+                    <button id="download-store-details-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        <span class="hidden sm:inline">Download Store Challan</span>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Name</th><th class="p-4 font-semibold text-sm">Assigned Stores</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="transportation-table-body" class="divide-y divide-gray-200"></tbody></table></div>
+        </div>` ,
   };
 
   // MODIFIED: handleDownloadMomoSheet to sort store names alphabetically
@@ -1073,9 +1064,7 @@ document.addEventListener("DOMContentLoaded", function () {
           <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
               <div><p class="font-semibold">${product.productName}</p><p class="text-sm text-gray-600">₹${product.price}</p></div>
               <div class="flex items-center space-x-2">
-                  <button class="quantity-btn" onclick="updateCart(${index}, -1)">-</button>
-                  <input type="number" step="0.01" value="0" min="0" class="w-16 text-center border rounded-md" onchange="setCartQuantity(${index}, this.value)">
-                  <button class="quantity-btn" onclick="updateCart(${index}, 1)">+</button>
+                  <input type="number" step="0.01" value="0" min="0" class="w-20 text-center border rounded-md p-2" onchange="setCartQuantity(${index}, this.value)">
               </div>
           </div>`
           )
@@ -1923,22 +1912,23 @@ document.addEventListener("DOMContentLoaded", function () {
     storeOrderTotalInfo.classList.remove("hidden");
   }
   function handleDownloadOrdersExcel() {
-    const startDate = document.getElementById(
-      "order-download-start-date"
-    ).value;
-    const endDate = document.getElementById("order-download-end-date").value;
-    if (!startDate || !endDate) {
-      alert("Please select a start and end date for the report.");
+    const selectedDate = document.getElementById("order-download-date").value;
+    
+    if (!selectedDate) {
+      alert("Please select a date for the report.");
       return;
     }
+
     const filteredOrders = orders.filter((o) => {
       const orderDate = o.date.slice(0, 10);
-      return orderDate >= startDate && orderDate <= endDate;
+      return orderDate === selectedDate;
     });
+
     if (filteredOrders.length === 0) {
-      alert("No orders found in the selected date range.");
+      alert("No orders found for the selected date.");
       return;
     }
+
     const allStoreNames = [
       ...new Set(filteredOrders.map((o) => o.storeName)),
     ].sort();
@@ -1960,26 +1950,30 @@ document.addEventListener("DOMContentLoaded", function () {
         totalQuantity += quantity;
       });
       row["Total"] = totalQuantity;
-      row["Stock"] = "";
       return row;
     });
+
     const worksheet = XLSX.utils.json_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Order Details");
-    const fileName = `Order_Report_${startDate}_to_${endDate}.xlsx`;
+    const fileName = `Order_Report_${selectedDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
   // MODIFIED: handleDownloadStoreReportImage for better formatting and print size simulation
   function handleDownloadStoreReportImage() {
     const storeName = document.getElementById("store-download-select").value;
     const date = document.getElementById("order-store-report-date").value;
+    
     if (!storeName || !date) {
       alert("Please select a store and a date to download the report.");
       return;
     }
+    
+    // Filter orders for the specific store and date
     const filteredOrders = orders.filter(
       (o) => o.storeName === storeName && o.date.startsWith(date)
     );
+    
     if (filteredOrders.length === 0) {
       alert(
         `No orders found for store: ${storeName} on ${new Date(
@@ -1988,6 +1982,8 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       return;
     }
+    
+    // Aggregate items
     const aggregatedItems = {};
     filteredOrders.forEach((order) => {
       order.items.forEach((item) => {
@@ -1998,58 +1994,83 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
+    // Create a temporary div to render the receipt
     const tempDiv = document.createElement("div");
-    // Styling for receipt-like appearance
-    tempDiv.style.width = "302px"; // Approx 80mm width
+    
+    // --- THERMAL RECEIPT STYLING ---
+    tempDiv.style.width = "80mm"; // Standard thermal paper width
     tempDiv.style.padding = "15px";
-    tempDiv.style.backgroundColor = "white";
-    tempDiv.style.fontFamily = "'Courier New', monospace";
+    tempDiv.style.backgroundColor = "#fff"; // White paper
+    tempDiv.style.color = "#000"; // Black text
+    tempDiv.style.fontFamily = "'Courier New', Courier, monospace"; // Receipt font
     tempDiv.style.fontSize = "12px";
+    tempDiv.style.lineHeight = "1.2";
+    tempDiv.style.position = "absolute";
+    tempDiv.style.left = "-9999px"; // Hide off-screen
 
-    // MODIFICATION: Removed the "Order Report for..." text and the unwanted comment from the loop.
+    const dateStr = new Date(date).toLocaleDateString("en-GB");
+
     let content = `
         <div style="text-align: center; margin-bottom: 10px;">
-            <img src="image_6a1dd8.png" alt="CastleMOMO Logo" style="width: 80px; height: auto; margin: 0 auto 5px; display: block;">
-            <h1 style="font-size: 18px; font-weight: bold; margin: 0;">${storeName}</h1>
+            <img src="image_6a1dd8.png" alt="" style="width: 50px; height: auto; margin: 0 auto 5px; display: block; opacity: 0.8;"> 
+            <h2 style="font-size: 16px; font-weight: bold; margin: 5px 0; text-transform: uppercase;">${storeName}</h2>
+            <p style="font-size: 10px; margin: 0;">DATE: ${dateStr}</p>
+            <p style="font-size: 10px; margin: 0;">REPORT TYPE: DAILY ORDER</p>
         </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <table style="width: 100%; border-collapse: collapse;">
             <thead>
-                <tr style="border-top: 1px dashed #333; border-bottom: 1px dashed #333;">
-                    <th style="padding: 8px; text-align: left;">Item</th>
-                    <th style="padding: 8px; text-align: right;">Quantity</th>
+                <tr>
+                    <th style="text-align: left; font-size: 11px; text-transform: uppercase; padding-bottom: 5px;">ITEM</th>
+                    <th style="text-align: right; font-size: 11px; text-transform: uppercase; padding-bottom: 5px;">QTY</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody style="font-size: 12px; font-weight: bold;">
                 ${Object.entries(aggregatedItems)
                   .map(
                     ([item, quantity]) => `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 8px;">${item}</td>
-                        <td style="padding: 8px; text-align: right;">${quantity}</td>
+                    <tr>
+                        <td style="padding: 4px 0;">${item}</td>
+                        <td style="text-align: right; padding: 4px 0;">${quantity}</td>
                     </tr>
                 `
                   )
                   .join("")}
             </tbody>
         </table>
+        
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+            <p style="font-size: 10px; margin: 0;">*** END OF REPORT ***</p>
+            <p style="font-size: 9px; margin-top: 5px;">Generated by Business Manager</p>
+        </div>
     `;
+
     tempDiv.innerHTML = content;
     document.body.appendChild(tempDiv);
+
+    // Convert to Image
     html2canvas(tempDiv, {
-      scale: 2,
+      scale: 2, // Higher scale for crisp text
       useCORS: true,
+      backgroundColor: "#ffffff",
+      windowWidth: tempDiv.scrollWidth,
+      windowHeight: tempDiv.scrollHeight
     })
       .then((canvas) => {
         const link = document.createElement("a");
-        link.download = `${storeName}_orders_${date}.png`;
+        link.download = `Receipt_${storeName}_${date}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
-        tempDiv.remove();
+        document.body.removeChild(tempDiv);
       })
       .catch((err) => {
-        console.error("Error generating image:", err);
-        alert("Failed to generate image. Please try again.");
-        tempDiv.remove();
+        console.error("Error generating receipt:", err);
+        alert("Failed to generate receipt image. Please try again.");
+        document.body.removeChild(tempDiv);
       });
   }
   // MODIFIED: This is the original ledger report download function, now confirmed to be working.
@@ -2286,42 +2307,47 @@ document.addEventListener("DOMContentLoaded", function () {
     XLSX.writeFile(workbook, fileName);
   }
   function handleDownloadTransportationExcel() {
-    const startDate = document.getElementById(
-      "transport-download-start-date"
-    ).value;
-    const endDate = document.getElementById(
-      "transport-download-end-date"
+    const selectedDate = document.getElementById(
+      "transport-download-date"
     ).value;
     const selectedTransporter = document.getElementById(
       "transport-select-name"
     ).value;
-    if (!startDate || !endDate) {
-      alert("Please select a date or date range for the report.");
+
+    if (!selectedDate) {
+      alert("Please select a date for the report.");
       return;
     }
+
     let relevantTransports = transportation.filter((t) => {
       const transportDate = t.date.slice(0, 10);
-      return transportDate >= startDate && transportDate <= endDate;
+      return transportDate === selectedDate;
     });
+
     if (selectedTransporter !== "all") {
       relevantTransports = relevantTransports.filter(
         (t) => t.transportationName === selectedTransporter
       );
     }
+
     if (relevantTransports.length === 0) {
       alert("No transportation assignments found for the selected criteria.");
       return;
     }
-    const allOrdersInDateRange = orders.filter((o) => {
+
+    const allOrdersInDate = orders.filter((o) => {
       const orderDate = o.date.slice(0, 10);
-      return orderDate >= startDate && orderDate <= endDate;
+      return orderDate === selectedDate;
     });
+
     const allProductNames = [
       ...new Set(products.map((p) => p.productName)),
     ].sort();
+
     const storeNames = [
       ...new Set(relevantTransports.flatMap((t) => t.stores)),
     ].sort();
+
     const quantityMap = {};
     allProductNames.forEach((pName) => {
       quantityMap[pName] = {};
@@ -2329,7 +2355,8 @@ document.addEventListener("DOMContentLoaded", function () {
         quantityMap[pName][sName] = "";
       });
     });
-    allOrdersInDateRange.forEach((order) => {
+
+    allOrdersInDate.forEach((order) => {
       if (storeNames.includes(order.storeName)) {
         order.items.forEach((item) => {
           if (allProductNames.includes(item.productName)) {
@@ -2342,18 +2369,22 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       }
     });
+
     const worksheetData = [];
     worksheetData.push([
       `Delivery Challan for ${
         selectedTransporter !== "all" ? selectedTransporter : "All Transporters"
       }`,
     ]);
+    worksheetData.push([`Date: ${selectedDate}`]);
     worksheetData.push([]);
+    
     const headerRow = ["Item"];
     storeNames.forEach((sName) => {
       headerRow.push(sName);
     });
     worksheetData.push(headerRow);
+
     allProductNames.forEach((pName) => {
       const row = [pName];
       storeNames.forEach((sName) => {
@@ -2361,50 +2392,51 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       worksheetData.push(row);
     });
+
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Delivery Challan");
-    const dateString = startDate
-      ? `${startDate}_to_${endDate || "today"}`
-      : `until_${endDate}`;
+    
     const fileName = `Delivery_Challan_${
       selectedTransporter !== "all" ? selectedTransporter + "_" : ""
-    }${dateString}.xlsx`;
+    }${selectedDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
   function handleDownloadTransportStoreDetails() {
-    const startDate = document.getElementById(
-      "transport-download-start-date"
-    ).value;
-    const endDate = document.getElementById(
-      "transport-download-end-date"
+    const selectedDate = document.getElementById(
+      "transport-download-date"
     ).value;
     const selectedTransporter = document.getElementById(
       "transport-select-name"
     ).value;
+
     if (selectedTransporter === "all") {
       alert("Please select a specific transporter to download store details.");
       return;
     }
-    if (!startDate || !endDate) {
-      alert("Please select a date or date range for the report.");
+
+    if (!selectedDate) {
+      alert("Please select a date for the report.");
       return;
     }
+
     let relevantTransports = transportation.filter((t) => {
       const transportDate = t.date.slice(0, 10);
       return (
-        transportDate >= startDate &&
-        transportDate <= endDate &&
+        transportDate === selectedDate &&
         t.transportationName === selectedTransporter
       );
     });
+
     if (relevantTransports.length === 0) {
       alert("No transportation assignments found for the selected criteria.");
       return;
     }
+
     const assignedStores = [
       ...new Set(relevantTransports.flatMap((t) => t.stores)),
     ];
+
     const storeDetailsData = [];
     assignedStores.forEach((storeName) => {
       const store = stores.find((s) => s.storeName === storeName);
@@ -2416,17 +2448,17 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       }
     });
+
     if (storeDetailsData.length === 0) {
       alert("No store details found for the selected criteria.");
       return;
     }
+
     const worksheet = XLSX.utils.json_to_sheet(storeDetailsData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Store Challan");
-    const dateString = startDate
-      ? `${startDate}_to_${endDate || "today"}`
-      : `until_${endDate}`;
-    const fileName = `Store_Challan_${selectedTransporter}_${dateString}.xlsx`;
+    
+    const fileName = `Store_Challan_${selectedTransporter}_${selectedDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
   // MODIFIED: handleDownloadMomoSticker to be more robust
