@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", async function() {
             // ---------------------------------------------------------
-            // 1. FIREBASE CONFIGURATION (YOUR DETAILS INSERTED)
+            // 1. FIREBASE CONFIGURATION
             // ---------------------------------------------------------
             const firebaseConfig = {
                 apiKey: "AIzaSyDpfGoS2qPEGIS7e7DNra__oBmAy9avIq8",
@@ -42,7 +42,6 @@ document.addEventListener("DOMContentLoaded", async function() {
                     const doc = await db.collection("business_data").doc("main_data").get();
                     if (doc.exists) {
                         const data = doc.data();
-                        // Load data into variables, defaulting to empty arrays if undefined
                         stores = data.stores || [];
                         products = data.products || [];
                         orders = data.orders || [];
@@ -56,7 +55,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                         duePayments = data.duePayments || [];
 
                         console.log("Data loaded successfully.");
-                        // Re-render the current page to show the loaded data
+                        // Re-render the current page
                         const activeLink = document.querySelector('.sidebar-link.active');
                         if (activeLink) {
                             const currentPage = activeLink.id.split('-')[1];
@@ -70,7 +69,6 @@ document.addEventListener("DOMContentLoaded", async function() {
                     }
                 } catch (error) {
                     console.error("Error loading data:", error);
-                    // alert("Could not load data. Please check your internet connection.");
                 }
             };
 
@@ -216,7 +214,11 @@ document.addEventListener("DOMContentLoaded", async function() {
                 </div>
                 <button id="download-store-orders-img-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15.414 10.586a2 2 0 00-2.828-2.828L7 13.172V17h3.828l5.586-5.586a2 2 0 000-2.828zM14 6a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
-                    <span class="hidden sm:inline">Download Store Report Image</span>
+                    <span class="hidden sm:inline">Download Image</span>
+                </button>
+                <button id="print-store-report-btn" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center w-full sm:w-auto justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    <span class="hidden sm:inline">Print Report</span>
                 </button>
                 <div class="w-full sm:w-auto">
                     <label for="momo-sticker-store-select" class="block text-sm font-medium text-gray-700">Momo Sticker</label>
@@ -509,7 +511,6 @@ document.addEventListener("DOMContentLoaded", async function() {
   // 6. INITIALIZATION & DATA SYNCING
   // ---------------------------------------------------------
   const init = () => {
-    // Load from cloud when app starts
     loadDataFromCloud();
     renderPage("dashboard");
     editPaymentForm.addEventListener("submit", handleEditPayment);
@@ -519,7 +520,7 @@ document.addEventListener("DOMContentLoaded", async function() {
   };
 
   // ---------------------------------------------------------
-  // 7. CORE FUNCTIONS (Render, Nav, Handlers)
+  // 7. CORE FUNCTIONS
   // ---------------------------------------------------------
   const renderPage = (pageName) => {
     const contentDiv = document.getElementById(`content-${pageName}`);
@@ -633,8 +634,10 @@ document.addEventListener("DOMContentLoaded", async function() {
     document
       .getElementById("download-momo-sheet-btn")
       .addEventListener("click", handleDownloadMomoSheet);
+    
     renderStoreOptionsForOrder();
     renderProductsForOrder();
+    
     // Keyboard navigation logic
     document.getElementById("order-product-list").addEventListener("keydown", (e) => {
         const activeElement = document.activeElement;
@@ -650,9 +653,17 @@ document.addEventListener("DOMContentLoaded", async function() {
           }
         }
       });
+
+    // Image Download Button Listener
     document
       .getElementById("download-store-orders-img-btn")
       .addEventListener("click", handleDownloadStoreReportImage);
+
+    // NEW: Print Button Listener
+    document
+      .getElementById("print-store-report-btn")
+      .addEventListener("click", handlePrintStoreReport);
+
     const momoStickerStoreSelect = document.getElementById(
       "momo-sticker-store-select"
     );
@@ -661,6 +672,7 @@ document.addEventListener("DOMContentLoaded", async function() {
       stores
         .map((s) => `<option value="${s.storeName}">${s.storeName}</option>`)
         .join("");
+        
     document
       .getElementById("download-momo-sticker-btn")
       .addEventListener("click", handleDownloadMomoSticker);
@@ -678,7 +690,6 @@ document.addEventListener("DOMContentLoaded", async function() {
     const today = new Date().toISOString().slice(0, 10);
     document.getElementById("return-filter-date").value = today;
     renderReturnsList(today);
-    // Keyboard navigation logic
     document.getElementById("return-product-list").addEventListener("keydown", (e) => {
         const activeElement = document.activeElement;
         if (activeElement && activeElement.tagName === "INPUT" && activeElement.type === "number") {
@@ -988,6 +999,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
   };
 
+  // Simplified Product List for Order (No +/- buttons)
   const renderProductsForOrder = () => {
     const orderProductList = document.getElementById("order-product-list");
     if (!orderProductList) return;
@@ -1836,6 +1848,112 @@ document.addEventListener("DOMContentLoaded", async function() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Order Details");
     const fileName = `Order_Report_${selectedDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
+  }
+
+  // --- NEW: Print Store Report Directly ---
+  function handlePrintStoreReport() {
+    const storeName = document.getElementById("store-download-select").value;
+    const date = document.getElementById("order-store-report-date").value;
+
+    if (!storeName || !date) {
+      alert("Please select a store and a date to print the report.");
+      return;
+    }
+
+    const filteredOrders = orders.filter(
+      (o) => o.storeName === storeName && o.date.startsWith(date)
+    );
+
+    if (filteredOrders.length === 0) {
+      alert(
+        `No orders found for store: ${storeName} on ${new Date(
+          date
+        ).toLocaleDateString("en-GB")}.`
+      );
+      return;
+    }
+
+    const aggregatedItems = {};
+    filteredOrders.forEach((order) => {
+      order.items.forEach((item) => {
+        if (!aggregatedItems[item.productName]) {
+          aggregatedItems[item.productName] = 0;
+        }
+        aggregatedItems[item.productName] += item.quantity;
+      });
+    });
+
+    const dateStr = new Date(date).toLocaleDateString("en-GB");
+
+    // Generate the Receipt HTML
+    const printContent = `
+      <html>
+        <head>
+          <title>Print Receipt - ${storeName}</title>
+          <style>
+            @page { size: 80mm auto; margin: 0; }
+            body { 
+              font-family: 'Courier New', Courier, monospace; 
+              width: 80mm; 
+              margin: 0 auto; 
+              padding: 10px;
+              color: #000;
+              background-color: #fff;
+            }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .text-left { text-align: left; }
+            h2 { font-size: 16px; font-weight: bold; margin: 5px 0; text-transform: uppercase; }
+            p { font-size: 10px; margin: 0; }
+            .dashed-line { border-bottom: 1px dashed #000; margin: 10px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th { font-size: 11px; text-transform: uppercase; padding-bottom: 5px; }
+            td { font-size: 12px; font-weight: bold; padding: 4px 0; }
+            img { width: 50px; height: auto; display: block; margin: 0 auto 5px; opacity: 0.8; }
+          </style>
+        </head>
+        <body>
+          <div class="text-center">
+             <img src="image_6a1dd8.png" alt="">
+             <h2>${storeName}</h2>
+             <p>DATE: ${dateStr}</p>
+             <p>REPORT TYPE: DAILY ORDER</p>
+          </div>
+          <div class="dashed-line"></div>
+          <table>
+            <thead>
+              <tr>
+                <th class="text-left">ITEM</th>
+                <th class="text-right">QTY</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(aggregatedItems)
+                .map(
+                  ([item, quantity]) => `
+                  <tr>
+                    <td>${item}</td>
+                    <td class="text-right">${quantity}</td>
+                  </tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
+          <div class="dashed-line"></div>
+          <div class="text-center" style="margin-top: 15px;">
+             <p>*** END OF REPORT ***</p>
+             <p style="font-size: 9px; margin-top: 5px;">Generated by Business Manager</p>
+          </div>
+          <script>
+             window.onload = function() { window.print(); window.close(); }
+          </script>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '', 'height=600,width=400');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   }
 
   function handleDownloadStoreReportImage() {
