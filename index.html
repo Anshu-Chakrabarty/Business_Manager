@@ -34,7 +34,7 @@
     <div class="relative min-h-screen md:flex">
         <div class="bg-gray-800 text-gray-100 flex justify-between md:hidden">
             <a href="#" class="block p-4 text-white font-bold">Business Manager</a>
-            <button id="mobile-menu-button" class="p-4 focus:outline-none focus:bg-gray-700">
+            <button id="mobile-menu-button" class="p-4 focus:outline-none focus:bg-gray-700" aria-label="Open mobile menu">
           <svg
             class="h-5 w-5"
             xmlns="http://www.w3.org/2000/svg"
@@ -272,6 +272,7 @@
             type="password"
             id="password-input"
             placeholder="Password"
+            aria-label="Owner Password"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />
@@ -314,6 +315,7 @@
             type="text"
             id="edit-customerName"
             placeholder="Customer Name"
+            aria-label="Customer Name"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />
@@ -321,6 +323,7 @@
             type="text"
             id="edit-storeName"
             placeholder="Store Name"
+            aria-label="Store Name"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />
@@ -330,6 +333,7 @@
               step="0.01"
               id="edit-transport"
               placeholder="Transport (₹) (Optional)"
+              aria-label="Transport Charge"
               class="w-full p-3 border border-gray-300 rounded-lg"
             />
             <input
@@ -337,6 +341,7 @@
               step="0.01"
               id="edit-storeCommission"
               placeholder="Store Comm (%)"
+              aria-label="Store Commission Percentage"
               class="w-full p-3 border border-gray-300 rounded-lg"
               required
             />
@@ -345,11 +350,13 @@
             type="text"
             id="edit-phoneNumber"
             placeholder="Shop Phone Number"
+            aria-label="Shop Phone Number"
             class="w-full p-3 border border-gray-300 rounded-lg"
           />
           <textarea
             id="edit-details"
             placeholder="Basic Details"
+            aria-label="Basic Details"
             rows="2"
             class="w-full p-3 border border-gray-300 rounded-lg"
           ></textarea>
@@ -381,6 +388,7 @@
             type="text"
             id="edit-productName"
             placeholder="Product Name"
+            aria-label="Product Name"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />
@@ -389,6 +397,7 @@
             step="0.01"
             id="edit-price"
             placeholder="Price"
+            aria-label="Price"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />
@@ -420,6 +429,7 @@
             type="text"
             id="edit-transportationName"
             placeholder="Car/Person Name"
+            aria-label="Car or Person Name"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />
@@ -436,6 +446,7 @@
             type="text"
             id="edit-deliveryShopCode"
             placeholder="Delivery Shop Code"
+            aria-label="Delivery Shop Code"
             class="w-full p-3 border border-gray-300 rounded-lg"
           />
           <div class="flex justify-end space-x-4">
@@ -472,7 +483,7 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700"
+              <label class="block text-sm font-medium text-gray-700" for="edit-cashAmount"
                 >Cash Amount (₹)</label
               >
               <input
@@ -480,11 +491,12 @@
                 step="0.01"
                 id="edit-cashAmount"
                 placeholder="Cash Amount"
+                aria-label="Cash Amount"
                 class="w-full p-3 border border-gray-300 rounded-lg"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700"
+              <label class="block text-sm font-medium text-gray-700" for="edit-onlineAmount"
                 >Online Amount (₹)</label
               >
               <input
@@ -492,6 +504,7 @@
                 step="0.01"
                 id="edit-onlineAmount"
                 placeholder="Online Amount"
+                aria-label="Online Amount"
                 class="w-full p-3 border border-gray-300 rounded-lg"
               />
             </div>
@@ -526,6 +539,7 @@
             type="password"
             id="new-owner-password-reset"
             placeholder="New Password"
+            aria-label="New Password"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />
@@ -533,6 +547,7 @@
             type="password"
             id="confirm-owner-password-reset"
             placeholder="Confirm New Password"
+            aria-label="Confirm New Password"
             class="w-full p-3 border border-gray-300 rounded-lg"
             required
           />

@@ -142,19 +142,19 @@ document.addEventListener("DOMContentLoaded", async function() {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div id="dashboard-stores-card" data-target="store" class="dashboard-card bg-white p-6 rounded-xl shadow-md flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Total Stores</p><p id="dashboard-total-stores" class="text-3xl font-bold text-gray-800">0</p></div><div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg></div></div>
             <div id="dashboard-products-card" data-target="product" class="dashboard-card bg-white p-6 rounded-xl shadow-md flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Total Products</p><p id="dashboard-total-products" class="text-3xl font-bold text-gray-800">0</p></div><div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7l8 4" /></svg></div></div>
-            <div id="dashboard-orders-card" data-target="order" class="dashboard-card bg-white p-6 rounded-xl shadow-md flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Today's Orders</p><p id="dashboard-todays-orders" class="text-3xl font-bold text-gray-800">0</p></div><div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg></div></div>
+            <div id="dashboard-orders-card" data-target="order" class="dashboard-card bg-white p-6 rounded-xl shadow-md flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Today's Orders</p><p id="dashboard-todays-orders" class="text-3xl font-bold text-gray-800">0</p></div><div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg></div></div>
             <div id="dashboard-agents-card" data-target="agent" class="dashboard-card bg-white p-6 rounded-xl shadow-md flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Total Agents</p><p id="dashboard-total-agents" class="text-3xl font-bold text-gray-800">0</p></div><div class="bg-purple-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg></div></div>
         </div>`,
                     store: () => `
         <h2 class="text-3xl font-bold text-gray-800 mb-6">Store Management</h2>
-        <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Store</h3><form id="add-store-form" class="space-y-4"><input type="text" name="storeName" placeholder="Store Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="text" name="customerName" placeholder="Customer Name" class="w-full p-3 border border-gray-300 rounded-lg" required><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="number" step="0.01" name="transport" placeholder="Transportation Charge (₹) (Optional)" class="w-full p-3 border border-gray-300 rounded-lg"><input type="number" step="0.01" name="storeCommission" placeholder="Store Comm (%)" class="w-full p-3 border border-gray-300 rounded-lg" required></div><input type="text" name="phoneNumber" placeholder="Shop Phone Number" class="w-full p-3 border border-gray-300 rounded-lg"><textarea name="details" placeholder="Basic Details" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Store</button></form></div>
+        <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Store</h3><form id="add-store-form" class="space-y-4"><input type="text" name="storeName" placeholder="Store Name" aria-label="Store Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="text" name="customerName" placeholder="Customer Name" aria-label="Customer Name" class="w-full p-3 border border-gray-300 rounded-lg" required><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="number" step="0.01" name="transport" placeholder="Transportation Charge (₹) (Optional)" aria-label="Transportation Charge" class="w-full p-3 border border-gray-300 rounded-lg"><input type="number" step="0.01" name="storeCommission" placeholder="Store Comm (%)" aria-label="Store Commission Percentage" class="w-full p-3 border border-gray-300 rounded-lg" required></div><input type="text" name="phoneNumber" placeholder="Shop Phone Number" aria-label="Shop Phone Number" class="w-full p-3 border border-gray-300 rounded-lg"><textarea name="details" placeholder="Basic Details" aria-label="Basic Details" rows="2" class="w-full p-3 border border-gray-300 rounded-lg"></textarea><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Store</button></form></div>
         <div class="mt-8 mb-4">
-          <input type="text" id="search-store-input" placeholder="Search by Store or Customer Name..." class="w-full p-3 border border-gray-300 rounded-lg">
+          <input type="text" id="search-store-input" placeholder="Search by Store or Customer Name..." aria-label="Search Store" class="w-full p-3 border border-gray-300 rounded-lg">
         </div>
         <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">All Stores</h3><div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">#</th><th class="p-4 font-semibold text-sm">Name</th><th class="p-4 font-semibold text-sm">Customer</th><th class="p-4 font-semibold text-sm">Transport (₹)</th><th class="p-4 font-semibold text-sm">Store Comm (%)</th><th class="p-4 font-semibold text-sm">Phone Number</th><th class="p-4 font-semibold text-sm">Details</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="stores-table-body" class="divide-y divide-gray-200"></tbody></table></div>`,
                     product: () => `
         <h2 class="text-3xl font-bold text-gray-800 mb-6">Product Management</h2>
-        <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Product</h3><form id="add-product-form" class="space-y-4"><input type="text" name="productName" placeholder="Product Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="number" step="0.01" name="price" placeholder="Price" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Product</button></form></div>
+        <div class="bg-white p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold mb-4">Add New Product</h3><form id="add-product-form" class="space-y-4"><input type="text" name="productName" placeholder="Product Name" aria-label="Product Name" class="w-full p-3 border border-gray-300 rounded-lg" required><input type="number" step="0.01" name="price" placeholder="Price" aria-label="Price" class="w-full p-3 border border-gray-300 rounded-lg" required><button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Add Product</button></form></div>
         <h3 class="text-2xl font-bold text-gray-800 mt-8 mb-4">All Products</h3><div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">#</th><th class="p-4 font-semibold text-sm">Name</th><th class="p-4 font-semibold text-sm">Price ₹</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="products-table-body" class="divide-y divide-gray-200"></tbody></table></div>`,
                     order: () => `
         <h2 class="text-3xl font-bold text-gray-800 mb-6">Order Management</h2>
@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Place a New Order</h3>
                     <form id="place-order-form" class="space-y-4">
-                        <select id="order-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select Store</option></select>
+                        <select id="order-store-select" aria-label="Select Store" class="w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select Store</option></select>
                     </form>
                 </div>
                 <div id="cart-section" class="bg-white p-6 rounded-xl shadow-md mt-8">
@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Record a New Return</h3>
                     <form id="record-return-form" class="space-y-4">
-                        <select id="return-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select Store for Return</option></select>
+                        <select id="return-store-select" aria-label="Select Store for Return" class="w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select Store for Return</option></select>
                     </form>
                 </div>
                 <div id="return-cart-section" class="bg-white p-6 rounded-xl shadow-md mt-8">
@@ -304,8 +304,8 @@ document.addEventListener("DOMContentLoaded", async function() {
             <h3 class="text-xl font-semibold mb-4">Welcome!</h3>
             <p class="text-gray-600 mb-6">Please set up an owner password to secure your application and manage agents.</p>
             <form id="initial-owner-signup-form" class="space-y-4 max-w-sm mx-auto">
-                <input type="password" id="new-owner-password" placeholder="Enter New Password" class="w-full p-3 border border-gray-300 rounded-lg" required>
-                <input type="password" id="confirm-owner-password" placeholder="Confirm New Password" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                <input type="password" id="new-owner-password" placeholder="Enter New Password" aria-label="New Password" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                <input type="password" id="confirm-owner-password" placeholder="Confirm New Password" aria-label="Confirm New Password" class="w-full p-3 border border-gray-300 rounded-lg" required>
                 <button type="submit" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Set Password</button>
             </form>
         </div>
@@ -362,7 +362,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Add New Agent</h3>
                     <form id="add-agent-form" class="space-y-4">
-                        <input type="text" name="agentName" placeholder="Agent Name" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                        <input type="text" name="agentName" placeholder="Agent Name" aria-label="Agent Name" class="w-full p-3 border border-gray-300 rounded-lg" required>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Select Stores & Set Commission</label>
                             <div id="agent-store-list" class="space-y-2 max-h-60 overflow-y-auto border p-4 rounded-lg">
@@ -370,7 +370,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                                   stores
                                     .map(
                                       (store) =>
-                                        `<div class="flex items-center justify-between"><label class="flex items-center"><input type="checkbox" name="selected_stores" value="${store.storeName}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded"><span class="ml-3 text-gray-700">${store.storeName}</span></label><input type="number" step="0.01" name="commission_${store.storeName}" placeholder="Comm %" class="w-24 p-1 border border-gray-300 rounded-lg text-sm" disabled></div>`
+                                        `<div class="flex items-center justify-between"><label class="flex items-center"><input type="checkbox" name="selected_stores" value="${store.storeName}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded"><span class="ml-3 text-gray-700">${store.storeName}</span></label><input type="number" step="0.01" name="commission_${store.storeName}" placeholder="Comm %" aria-label="Commission for ${store.storeName}" class="w-24 p-1 border border-gray-300 rounded-lg text-sm" disabled></div>`
                                     )
                                     .join("") ||
                                   '<p class="text-gray-500">No stores available.</p>'
@@ -392,7 +392,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         <div class="bg-white p-6 rounded-xl shadow-md mb-8">
             <h3 class="text-xl font-semibold mb-4">Record a Due Payment</h3>
             <form id="add-due-payment-form" class="space-y-4">
-                <select id="due-payment-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                <select id="due-payment-store-select" aria-label="Select Store for Due Payment" class="w-full p-3 border border-gray-300 rounded-lg" required>
                     <option value="">Select Store</option>
                 </select>
                 <div>
@@ -405,7 +405,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         <div class="bg-white p-6 rounded-xl shadow-md">
             <h3 class="text-xl font-semibold mb-4">Record a Payment</h3>
             <form id="add-payment-form" class="space-y-4">
-                <select id="payment-store-select" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                <select id="payment-store-select" aria-label="Select Store for Payment" class="w-full p-3 border border-gray-300 rounded-lg" required>
                     <option value="">Select Store</option>
                 </select>
                 <div id="store-due-info" class="p-3 bg-yellow-100 text-yellow-800 rounded-lg hidden"></div>
@@ -458,7 +458,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         <div class="bg-white p-6 rounded-xl shadow-md">
             <h3 class="text-xl font-semibold mb-4">Assign Transportation</h3>
             <form id="add-transportation-form" class="space-y-4">
-                <input type="text" name="transportationName" placeholder="Car/Person Name" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                <input type="text" name="transportationName" placeholder="Car/Person Name" aria-label="Car or Person Name" class="w-full p-3 border border-gray-300 rounded-lg" required>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Stores</label>
                     <div id="transportation-store-list" class="space-y-2 max-h-60 overflow-y-auto border p-4 rounded-lg">
@@ -473,7 +473,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                         }
                     </div>
                 </div>
-                <input type="text" id="edit-deliveryShopCode" placeholder="Delivery Shop Code" class="w-full p-3 border border-gray-300 rounded-lg">
+                <input type="text" id="edit-deliveryShopCode" placeholder="Delivery Shop Code" aria-label="Delivery Shop Code" class="w-full p-3 border border-gray-300 rounded-lg">
                 <div class="flex justify-end space-x-4">
                     <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">Assign</button>
                 </div>
@@ -1010,7 +1010,7 @@ document.addEventListener("DOMContentLoaded", async function() {
           <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
               <div><p class="font-semibold">${product.productName}</p><p class="text-sm text-gray-600">₹${product.price}</p></div>
               <div class="flex items-center space-x-2">
-                  <input type="number" step="0.01" value="0" min="0" class="w-20 text-center border rounded-md p-2" onchange="setCartQuantity(${index}, this.value)">
+                  <input type="number" step="0.01" value="0" min="0" aria-label="Quantity for ${product.productName}" class="w-20 text-center border rounded-md p-2" onchange="setCartQuantity(${index}, this.value)">
               </div>
           </div>`
           )
@@ -1605,202 +1605,6 @@ document.addEventListener("DOMContentLoaded", async function() {
       downloadBillAsImage(storeName, billOutput);
   }
 
-  function handleDownloadAgentStatement(agentName, monthYear) {
-    const [year, month] = monthYear.split("-");
-    const agentPendingCommissions = pendingCommissions.filter(
-      (c) => c.agentName === agentName && c.date.slice(0, 7) === monthYear
-    );
-    const agentPaidCommissions = paidCommissions.filter(
-      (c) => c.agentName === agentName && c.date.slice(0, 7) === monthYear
-    );
-
-    if (
-      agentPendingCommissions.length === 0 &&
-      agentPaidCommissions.length === 0
-    ) {
-      alert(`No commission data found for ${agentName} in ${monthYear}.`);
-      return;
-    }
-
-    const reportData = [
-      ["Agent Statement for", agentName],
-      ["Month:", monthYear],
-      [],
-    ];
-
-    const agent = agents.find((a) => a.agentName === agentName);
-
-    if (agentPendingCommissions.length > 0) {
-      reportData.push(["Pending Commissions"]);
-      reportData.push([
-        "Order/Return Date",
-        "Store",
-        "Commission (%)",
-        "Amount (₹)",
-      ]);
-      const totalPending = agentPendingCommissions.reduce(
-        (sum, c) => sum + c.commissionAmount,
-        0
-      );
-      agentPendingCommissions.forEach((c) => {
-        const commissionRate = agent?.commissions[c.storeName] || 0;
-        reportData.push([
-          new Date(c.date).toLocaleDateString("en-GB"),
-          c.storeName,
-          `${commissionRate}%`,
-          c.commissionAmount.toFixed(2),
-        ]);
-      });
-      reportData.push(["", "", "Total", totalPending.toFixed(2)]);
-    }
-
-    reportData.push([]);
-
-    if (agentPaidCommissions.length > 0) {
-      reportData.push(["Paid Commissions"]);
-      reportData.push([
-        "Paid Date",
-        "Order Date",
-        "Store",
-        "Commission (%)",
-        "Amount (₹)",
-      ]);
-      const totalPaid = agentPaidCommissions.reduce(
-        (sum, c) => sum + c.commissionAmount,
-        0
-      );
-      agentPaidCommissions.forEach((c) => {
-        const commissionRate = agent?.commissions[c.storeName] || 0;
-        reportData.push([
-          new Date(c.paidDate).toLocaleDateString("en-GB"),
-          new Date(c.date).toLocaleDateString("en-GB"),
-          c.storeName,
-          `${commissionRate}%`,
-          c.commissionAmount.toFixed(2),
-        ]);
-      });
-      reportData.push(["", "", "", "Total", totalPaid.toFixed(2)]);
-    }
-
-    const worksheet = XLSX.utils.aoa_to_sheet(reportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Agent Statement");
-    const fileName = `Agent_Statement_${agentName}_${monthYear}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-  }
-
-  function handleAddTransportation(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const transportationName = formData.get("transportationName");
-    const selectedStores = formData.getAll("transport_stores");
-    const deliveryShopCode = formData.get("deliveryShopCode");
-    if (!transportationName || selectedStores.length === 0) {
-      alert("Please provide a name and select at least one store.");
-      return;
-    }
-    const existingTransport = transportation.find(
-      (t) =>
-        t.transportationName === transportationName &&
-        t.deliveryShopCode === deliveryShopCode
-    );
-    if (existingTransport) {
-      existingTransport.stores = [
-        ...new Set([...existingTransport.stores, ...selectedStores]),
-      ];
-    } else {
-      transportation.push({
-        date: new Date().toISOString(),
-        transportationName,
-        stores: selectedStores,
-        deliveryShopCode: deliveryShopCode || "",
-      });
-    }
-    saveData();
-    renderTransportationPage();
-    e.target.reset();
-  }
-
-  function handleAddPayment(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const storeName = document.getElementById("payment-store-select").value;
-    const cashAmount = parseFloat(formData.get("cashAmount")) || 0;
-    const onlineAmount = parseFloat(formData.get("onlineAmount")) || 0;
-    if (!storeName || (cashAmount === 0 && onlineAmount === 0)) {
-      alert(
-        "Please select a store and enter a valid amount for either cash or online."
-      );
-      return;
-    }
-    payments.push({
-      date: new Date().toISOString(),
-      storeName,
-      cashAmount,
-      onlineAmount,
-    });
-    saveData();
-    alert("Payment recorded!");
-    renderPaymentsPage();
-    e.target.reset();
-    document.getElementById("store-due-info").classList.add("hidden");
-    document.getElementById("store-order-total-info").classList.add("hidden");
-  }
-
-  function handleAddDuePayment(e) {
-    e.preventDefault();
-    const storeName = document.getElementById("due-payment-store-select").value;
-    const dueAmount = parseFloat(document.getElementById("dueAmount").value);
-    if (!storeName || isNaN(dueAmount) || dueAmount <= 0) {
-      alert("Please select a store and enter a valid due amount.");
-      return;
-    }
-    const existingDuePaymentIndex = duePayments.findIndex(
-      (dp) => dp.storeName === storeName
-    );
-    if (existingDuePaymentIndex > -1) {
-      duePayments[existingDuePaymentIndex].amount += dueAmount;
-    } else {
-      duePayments.push({
-        storeName,
-        amount: dueAmount,
-        date: new Date().toISOString(),
-      });
-    }
-    saveData();
-    alert(`Due payment of ₹${dueAmount} added for ${storeName}.`);
-    renderPaymentsPage();
-    e.target.reset();
-  }
-
-  function handlePaymentStoreSelect(e) {
-    const storeName = e.target.value;
-    const storeDueInfo = document.getElementById("store-due-info");
-    const storeOrderTotalInfo = document.getElementById("store-order-total-info");
-
-    if (!storeName) {
-      storeDueInfo.classList.add("hidden");
-      storeOrderTotalInfo.classList.add("hidden");
-      return;
-    }
-
-    const due = calculateDue(
-      storeName,
-      new Date().toISOString().slice(0, 10),
-      true
-    );
-    storeDueInfo.textContent = `Current Due for ${storeName}: ₹${due.toFixed(2)}`;
-    storeDueInfo.classList.remove("hidden");
-
-    const today = new Date().toISOString().slice(0, 10);
-    const todaysTotalOrdered = orders
-      .filter((o) => o.storeName === storeName && o.date.startsWith(today))
-      .reduce((sum, o) => sum + o.total, 0);
-
-    storeOrderTotalInfo.textContent = `Today's Order Amount: ₹${todaysTotalOrdered.toFixed(2)}`;
-    storeOrderTotalInfo.classList.remove("hidden");
-  }
-
   function handleDownloadOrdersExcel() {
     const selectedDate = document.getElementById("order-download-date").value;
 
@@ -1891,10 +1695,10 @@ document.addEventListener("DOMContentLoaded", async function() {
         <head>
           <title>Print Receipt - ${storeName}</title>
           <style>
-            @page { size: 80mm auto; margin: 0; }
+            @page { size: 75mm auto; margin: 0; }
             body { 
               font-family: 'Courier New', Courier, monospace; 
-              width: 80mm; 
+              width: 70mm; 
               margin: 0 auto; 
               padding: 10px;
               color: #000;
@@ -1909,7 +1713,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             table { width: 100%; border-collapse: collapse; }
             th { font-size: 11px; text-transform: uppercase; padding-bottom: 5px; }
             td { font-size: 12px; font-weight: bold; padding: 4px 0; }
-            img { width: 50px; height: auto; display: block; margin: 0 auto 5px; opacity: 0.8; }
+            img { width: 120px; height: auto; display: block; margin: 0 auto 5px; opacity: 1.0; }
           </style>
         </head>
         <body>
@@ -1991,7 +1795,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     const tempDiv = document.createElement("div");
 
     // --- THERMAL RECEIPT STYLING ---
-    tempDiv.style.width = "80mm";
+    tempDiv.style.width = "70mm";
     tempDiv.style.padding = "15px";
     tempDiv.style.backgroundColor = "#fff";
     tempDiv.style.color = "#000";
@@ -2005,7 +1809,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     let content = `
         <div style="text-align: center; margin-bottom: 10px;">
-            <img src="image_6a1dd8.png" alt="" style="width: 50px; height: auto; margin: 0 auto 5px; display: block; opacity: 0.8;"> 
+            <img src="image_6a1dd8.png" alt="" style="width: 120px; height: auto; margin: 0 auto 5px; display: block; opacity: 1.0;"> 
             <h2 style="font-size: 16px; font-weight: bold; margin: 5px 0; text-transform: uppercase;">${storeName}</h2>
             <p style="font-size: 10px; margin: 0;">DATE: ${dateStr}</p>
             <p style="font-size: 10px; margin: 0;">REPORT TYPE: DAILY ORDER</p>
@@ -3168,7 +2972,7 @@ document.addEventListener("DOMContentLoaded", async function() {
           <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
               <div><p class="font-semibold">${product.productName}</p><p class="text-sm text-gray-600">₹${product.price}</p></div>
               <div class="flex items-center space-x-2">
-                  <input type="number" step="0.01" value="0" min="0" class="w-20 text-center border rounded-md p-2" onchange="setReturnCartQuantity(${index}, this.value)">
+                  <input type="number" step="0.01" value="0" min="0" aria-label="Quantity for ${product.productName}" class="w-20 text-center border rounded-md p-2" onchange="setReturnCartQuantity(${index}, this.value)">
               </div>
           </div>`
           )
