@@ -718,7 +718,8 @@ document.addEventListener("DOMContentLoaded", async function() {
       .join("");
   }
 
-  function bindAgentListeners() {
+function bindAgentListeners() {
+    // 1. Check for Owner Password
     if (!ownerPassword) {
       const signupForm = document.getElementById("initial-owner-signup-form");
       if (signupForm) {
@@ -726,17 +727,21 @@ document.addEventListener("DOMContentLoaded", async function() {
       }
       return;
     }
+
+    // 2. Select Elements
     const agentSelect = document.getElementById("agent-select-name");
     const agentDetailsView = document.getElementById("agent-details-view");
     const addAgentForm = document.getElementById("add-agent-form");
-    const downloadStatementBtn = document.getElementById(
-      "download-agent-statement-btn"
-    );
+    const downloadStatementBtn = document.getElementById("download-agent-statement-btn");
+
+    // 3. Populate Agent Dropdown
     agentSelect.innerHTML =
       `<option value="">Select an Agent</option>` +
       agents
         .map((a) => `<option value="${a.agentName}">${a.agentName}</option>`)
         .join("");
+
+    // 4. Handle Dropdown Change
     agentSelect.addEventListener("change", (e) => {
       const selectedAgentName = e.target.value;
       if (selectedAgentName) {
@@ -746,6 +751,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         agentDetailsView.classList.add("hidden");
       }
     });
+
+    // 5. Handle Download Button
     downloadStatementBtn.addEventListener("click", () => {
       const selectedAgentName = agentSelect.value;
       const monthYear = document.getElementById("agent-report-month").value;
@@ -755,23 +762,37 @@ document.addEventListener("DOMContentLoaded", async function() {
         alert("Please select an agent and a month to download the statement.");
       }
     });
+
+    // 6. Handle Add Agent Form & Checkbox Logic (THE FIX IS HERE)
     if (addAgentForm) {
       addAgentForm.addEventListener("submit", handleAddAgent);
+      
       const agentStoreList = document.getElementById("agent-store-list");
-      agentStoreList.addEventListener("change", (e) => {
+      
+      // Remove old listener to avoid duplicates if any, then add new one
+      const newAgentStoreList = agentStoreList.cloneNode(true);
+      agentStoreList.parentNode.replaceChild(newAgentStoreList, agentStoreList);
+
+      newAgentStoreList.addEventListener("change", (e) => {
         if (e.target.type === "checkbox") {
-          const commInput = document.querySelector(
-            `input[name="commission_${e.target.value}"]`
-          );
+          // FIX: Use DOM traversal to find the sibling input reliably
+          // Find the parent container (the flex row)
+          const parentRow = e.target.closest('div.flex'); 
+          // Find the number input inside that specific row
+          const commInput = parentRow.querySelector('input[type="number"]');
+
           if (commInput) {
             commInput.disabled = !e.target.checked;
             if (!e.target.checked) {
-              commInput.value = "";
+              commInput.value = ""; // Clear value if unchecked
+            } else {
+              commInput.focus(); // Focus user cursor there immediately
             }
           }
         }
       });
     }
+
     renderAgents();
   }
 
@@ -977,25 +998,41 @@ document.addEventListener("DOMContentLoaded", async function() {
       `<tr><td colspan="4" class="text-center p-4 text-gray-500">No products added yet.</td></tr>`;
   };
 
-  const renderStoreOptionsForOrder = () => {
+ const renderStoreOptionsForOrder = () => {
     const orderStoreSelect = document.getElementById("order-store-select");
     const storeDownloadSelect = document.getElementById("store-download-select");
     const momoStickerStoreSelect = document.getElementById("momo-sticker-store-select");
+
+    // Exit if the main order select doesn't exist on this page
     if (!orderStoreSelect) return;
+
+    // Get a sorted list of all unique store names from your stores array
     const allStoresInvolved = [
-      ...new Set(stores.map((o) => o.storeName)),
+      ...new Set(stores.map((s) => s.storeName)),
     ].sort();
+
+    // Create the standard options HTML (used for placing orders and reports)
     const storeOptions =
       "<option value=''>Select Store</option>" +
       allStoresInvolved
         .map((store) => `<option value="${store}">${store}</option>`)
         .join("");
+
+    // 1. Populate Place Order Dropdown
     orderStoreSelect.innerHTML = storeOptions;
+
+    // 2. Populate Report Download Dropdown
     if (storeDownloadSelect) {
       storeDownloadSelect.innerHTML = storeOptions;
     }
+
+    // 3. Populate Momo Sticker Dropdown (With "All Stores" option)
     if (momoStickerStoreSelect) {
-      momoStickerStoreSelect.innerHTML = storeOptions;
+      momoStickerStoreSelect.innerHTML =
+        "<option value=''>Select Store</option><option value='all'>All Stores</option>" +
+        allStoresInvolved
+          .map((store) => `<option value="${store}">${store}</option>`)
+          .join("");
     }
   };
 
@@ -2334,54 +2371,109 @@ document.addEventListener("DOMContentLoaded", async function() {
     XLSX.writeFile(workbook, fileName);
   }
 
-  function handleDownloadMomoSticker() {
-    const storeName = document.getElementById(
-      "momo-sticker-store-select"
-    ).value;
+function handleDownloadMomoSticker() {
+    const storeName = document.getElementById("momo-sticker-store-select").value;
+    
     if (!storeName) {
-      alert("Please select a store to download stickers.");
+      alert("Please select a store (or All Stores) to download stickers.");
       return;
     }
+
     const today = new Date().toISOString().slice(0, 10);
-    const ordersToday = orders.filter(
-      (o) => o.storeName === storeName && o.date.startsWith(today)
-    );
-    if (ordersToday.length === 0) {
-      alert(`No orders found for ${storeName} today.`);
-      return;
-    }
-    const aggregatedItems = {};
+    // This array will hold all the rows for our Excel file
+    const worksheetData = []; 
 
-    ordersToday.forEach((order) => {
-      order.items.forEach((item) => {
-        if (item.productName.toLowerCase().includes("momo")) {
-          if (!aggregatedItems[item.productName]) {
-            aggregatedItems[item.productName] = 0;
-          }
-          aggregatedItems[item.productName] += item.quantity;
+    // --- Helper Function: adds a specific store's momo data to the sheet ---
+    const processStoreStickers = (targetStoreName) => {
+        // Find orders for this store today
+        const ordersToday = orders.filter(
+            (o) => o.storeName === targetStoreName && o.date.startsWith(today)
+        );
+
+        if (ordersToday.length === 0) return false;
+
+        const aggregatedItems = {};
+        let hasMomo = false;
+
+        // Aggregate counts for items containing "momo"
+        ordersToday.forEach((order) => {
+            order.items.forEach((item) => {
+                if (item.productName.toLowerCase().includes("momo")) {
+                    if (!aggregatedItems[item.productName]) {
+                        aggregatedItems[item.productName] = 0;
+                    }
+                    aggregatedItems[item.productName] += item.quantity;
+                    hasMomo = true;
+                }
+            });
+        });
+
+        // If this store has no momos today, skip it
+        if (!hasMomo) return false;
+
+        // --- Add to Worksheet Data ---
+        // 1. Store Name Header (Bold/Uppercased style)
+        worksheetData.push([targetStoreName.toUpperCase()]); 
+        
+        // 2. Column Headers
+        worksheetData.push(["Item", "Quantity"]); 
+
+        // 3. Item Rows
+        Object.entries(aggregatedItems).forEach(([item, quantity]) => {
+            worksheetData.push([item, quantity]);
+        });
+
+        // 4. Add gap (empty rows) after this store
+        worksheetData.push([]); 
+        worksheetData.push([]); 
+        
+        return true;
+    };
+
+    // --- Main Logic ---
+    if (storeName === "all") {
+        // Get all stores that have orders today to avoid checking empty ones
+        const storesWithOrders = [...new Set(orders
+            .filter(o => o.date.startsWith(today))
+            .map(o => o.storeName)
+        )].sort();
+
+        let anyDataFound = false;
+
+        // Loop through every store and add their block to the sheet
+        storesWithOrders.forEach(store => {
+            const hasData = processStoreStickers(store);
+            if (hasData) anyDataFound = true;
+        });
+
+        if (!anyDataFound) {
+            alert("No Momo orders found for any store today.");
+            return;
         }
-      });
-    });
 
-    if (Object.keys(aggregatedItems).length === 0) {
-      alert(`No momo orders for ${storeName} today.`);
-      return;
+    } else {
+        // Handle Single Store Selection
+        const hasData = processStoreStickers(storeName);
+        if (!hasData) {
+            alert(`No Momo orders found for ${storeName} today.`);
+            return;
+        }
     }
 
-    const stickerData = [{ "Store Name": storeName }, {}];
+    // --- Generate Excel ---
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Optional: Set column widths (Col A wider, Col B narrower)
+    const wscols = [
+        { wch: 30 }, 
+        { wch: 10 } 
+    ];
+    worksheet['!cols'] = wscols;
 
-    Object.entries(aggregatedItems).forEach(([item, quantity]) => {
-      stickerData.push({ Item: item, Quantity: quantity });
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(stickerData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      `${storeName} Stickers`
-    );
-    const fileName = `${storeName}_Momo_Stickers_${today}.xlsx`;
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Momo Stickers");
+
+    const fileName = `Momo_Stickers_${storeName === 'all' ? 'All_Stores' : storeName}_${today}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
 
@@ -2404,7 +2496,203 @@ document.addEventListener("DOMContentLoaded", async function() {
     alert("Owner password set successfully!");
     renderPage("agent");
   }
+// ---------------------------------------------------------
+  // MISSING FUNCTIONS FIX
+  // ---------------------------------------------------------
 
+  function handlePaymentStoreSelect(e) {
+    const storeName = e.target.value;
+    const dueInfoDiv = document.getElementById("store-due-info");
+    const orderInfoDiv = document.getElementById("store-order-total-info");
+
+    if (!storeName) {
+      dueInfoDiv.classList.add("hidden");
+      orderInfoDiv.classList.add("hidden");
+      return;
+    }
+
+    // 1. Calculate Current Due
+    const currentDue = calculateDue(storeName, new Date().toISOString().slice(0, 10), true);
+    
+    // 2. Calculate Today's Order Total
+    const today = new Date().toISOString().slice(0, 10);
+    const todaysOrders = orders.filter(o => o.storeName === storeName && o.date.startsWith(today));
+    const todaysTotal = todaysOrders.reduce((sum, o) => sum + o.total, 0);
+
+    // Update UI
+    dueInfoDiv.textContent = `Current Total Due: ₹${currentDue.toFixed(2)}`;
+    dueInfoDiv.classList.remove("hidden");
+    
+    if (todaysTotal > 0) {
+        orderInfoDiv.textContent = `Today's Orders Value: ₹${todaysTotal.toFixed(2)}`;
+        orderInfoDiv.classList.remove("hidden");
+    } else {
+        orderInfoDiv.classList.add("hidden");
+    }
+  }
+
+  function handleAddPayment(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const storeName = document.getElementById("payment-store-select").value; // Get explicitly from select
+    const cashAmount = parseFloat(formData.get("cashAmount")) || 0;
+    const onlineAmount = parseFloat(formData.get("onlineAmount")) || 0;
+
+    if (!storeName) {
+      alert("Please select a store.");
+      return;
+    }
+
+    if (cashAmount === 0 && onlineAmount === 0) {
+      alert("Please enter a valid amount (Cash or Online).");
+      return;
+    }
+
+    payments.push({
+      date: new Date().toISOString(),
+      storeName: storeName,
+      cashAmount: cashAmount,
+      onlineAmount: onlineAmount
+    });
+
+    saveData();
+    renderPaymentHistory();
+    // Re-trigger select logic to update due amount immediately
+    handlePaymentStoreSelect({ target: { value: storeName } });
+    
+    alert("Payment recorded successfully!");
+    e.target.reset();
+    // Reset the select value manually as reset() might not catch the select if it's outside standard flow or needs explicit reset
+    document.getElementById("payment-store-select").value = storeName; 
+  }
+
+  function handleAddDuePayment(e) {
+    e.preventDefault();
+    const storeName = document.getElementById("due-payment-store-select").value;
+    const amount = parseFloat(document.getElementById("dueAmount").value);
+
+    if (!storeName || isNaN(amount)) {
+      alert("Please select a store and enter a valid amount.");
+      return;
+    }
+
+    duePayments.push({
+      date: new Date().toISOString(),
+      storeName: storeName,
+      amount: amount
+    });
+
+    saveData();
+    alert(`Due payment of ₹${amount} added for ${storeName}.`);
+    e.target.reset();
+  }
+
+  function handleAddTransportation(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const transportationName = formData.get("transportationName");
+    // Get all checked boxes for stores
+    const selectedStores = Array.from(document.querySelectorAll('input[name="transport_stores"]:checked'))
+                                .map(cb => cb.value);
+    const deliveryShopCode = document.getElementById("edit-deliveryShopCode").value; // Using the ID from the form
+
+    if (!transportationName || selectedStores.length === 0) {
+      alert("Please enter a Transporter Name and select at least one Store.");
+      return;
+    }
+
+    transportation.push({
+      date: new Date().toISOString(),
+      transportationName: transportationName,
+      stores: selectedStores,
+      deliveryShopCode: deliveryShopCode || ""
+    });
+
+    saveData();
+    renderTransportationPage();
+    alert("Transportation assigned successfully!");
+    e.target.reset();
+  }
+
+  function handleAddAgent(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const agentName = formData.get("agentName");
+      
+      // Get all checked stores
+      const selectedStoreCheckboxes = document.querySelectorAll('input[name="selected_stores"]:checked');
+      const commissions = {};
+      
+      selectedStoreCheckboxes.forEach(checkbox => {
+          const storeName = checkbox.value;
+          const commissionVal = parseFloat(document.querySelector(`input[name="commission_${storeName}"]`).value);
+          if (!isNaN(commissionVal)) {
+              commissions[storeName] = commissionVal;
+          }
+      });
+
+      if (!agentName || Object.keys(commissions).length === 0) {
+          alert("Please enter Agent Name and select at least one store with a commission.");
+          return;
+      }
+
+      agents.push({
+          agentName,
+          commissions
+      });
+
+      saveData();
+      renderAgents();
+      updateDashboard();
+      e.target.reset();
+      // Disable all commission inputs again
+      document.querySelectorAll('#agent-store-list input[type="number"]').forEach(input => {
+          input.disabled = true;
+          input.value = "";
+      });
+      alert("Agent added successfully.");
+  }
+
+  function handleDownloadAgentStatement(agentName, monthYear) {
+      // Format monthYear (YYYY-MM) to filter dates
+      const [year, month] = monthYear.split("-");
+      
+      const relevantPending = pendingCommissions.filter(c => 
+          c.agentName === agentName && 
+          c.date.startsWith(monthYear)
+      );
+      
+      const relevantPaid = paidCommissions.filter(c => 
+          c.agentName === agentName && 
+          c.paidDate.startsWith(monthYear)
+      );
+
+      if (relevantPending.length === 0 && relevantPaid.length === 0) {
+          alert("No data found for this agent in the selected month.");
+          return;
+      }
+
+      const data = [
+          ["Agent Statement"],
+          [`Agent: ${agentName}`],
+          [`Month: ${monthYear}`],
+          [],
+          ["Type", "Date", "Store", "Amount (₹)", "Status"],
+      ];
+
+      relevantPaid.forEach(c => {
+          data.push(["Paid Commission", c.paidDate.slice(0,10), c.storeName, c.commissionAmount.toFixed(2), "PAID"]);
+      });
+
+      relevantPending.forEach(c => {
+           data.push(["Pending Commission", c.date.slice(0,10), c.storeName, c.commissionAmount.toFixed(2), "PENDING"]);
+      });
+
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Agent Statement");
+      XLSX.writeFile(workbook, `Statement_${agentName}_${monthYear}.xlsx`);
+  }
   window.openEditStoreModal = (index) => {
     promptForPassword(() => {
       const store = stores[index];
