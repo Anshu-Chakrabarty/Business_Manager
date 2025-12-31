@@ -270,31 +270,38 @@ document.addEventListener("DOMContentLoaded", async function() {
             </div>
             <div class="bg-white rounded-xl shadow-md overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-50"><tr><th class="p-4 font-semibold text-sm">Date</th><th class="p-4 font-semibold text-sm">Store</th><th class="p-4 font-semibold text-sm">Returned Items</th><th class="p-4 font-semibold text-sm">Total Value</th><th class="p-4 font-semibold text-sm">Actions</th></tr></thead><tbody id="returns-table-body" class="divide-y divide-gray-200"></tbody></table></div>
         </div>`,
-                    billing: () => `
+                   billing: () => `
         <h2 class="text-3xl font-bold text-gray-800 mb-6">Billing</h2>
         <div class="bg-white p-6 rounded-xl shadow-md">
-            <h3 class="text-xl font-semibold mb-4">Generate Bill</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div class="flex-grow md:col-span-2">
+            <h3 class="text-xl font-semibold mb-4">Generate Documents</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div class="flex-grow">
                     <label for="billing-store-select" class="block text-sm font-medium text-gray-700">Store</label>
                     <select id="billing-store-select" class="mt-1 w-full p-3 border border-gray-300 rounded-lg" required><option value="">Select a Store</option></select>
                 </div>
-                <div class="flex-grow md:col-span-2">
+                <div class="flex-grow">
                     <label for="billing-date" class="block text-sm font-medium text-gray-700">Date</label>
                     <input type="date" id="billing-date" class="mt-1 w-full p-3 border border-gray-300 rounded-lg">
                 </div>
-                <button id="generate-bill-btn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold h-fit w-full md:col-span-4">Generate</button>
+                <div class="md:col-span-2 flex flex-col sm:flex-row gap-4 mt-2">
+                    <button id="generate-bill-btn" class="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold text-center">
+                        Generate Bill (Orders)
+                    </button>
+                    <button id="generate-receipt-btn" class="flex-1 bg-teal-600 text-white px-6 py-3 rounded-lg font-semibold text-center">
+                        Generate Payment Receipt
+                    </button>
+                </div>
             </div>
         </div>
         <div id="bill-output-container" class="mt-8 hidden">
             <div id="bill-output" class="relative bg-white p-8 rounded-xl shadow-lg">
             </div>
             <div class="mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
-                       <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
-                           Share
-                       </button>
-                       <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download Bill</button>
+                        <button id="share-bill-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+                            Share
+                        </button>
+                        <button id="download-bill-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold">Download</button>
             </div>
         </div>`,
                     agent: () => {
@@ -624,7 +631,8 @@ document.addEventListener("DOMContentLoaded", async function() {
       .addEventListener("submit", handleAddProduct);
   }
 
-  function bindOrderListeners() {
+function bindOrderListeners() {
+    // 1. Button Listeners
     document
       .getElementById("place-order-btn")
       .addEventListener("click", handleSubmitOrder);
@@ -635,44 +643,51 @@ document.addEventListener("DOMContentLoaded", async function() {
       .getElementById("download-momo-sheet-btn")
       .addEventListener("click", handleDownloadMomoSheet);
     
-    renderStoreOptionsForOrder();
+    // 2. Render Dropdowns and Lists
+    renderStoreOptionsForOrder(); 
     renderProductsForOrder();
     
-    // Keyboard navigation logic
-    document.getElementById("order-product-list").addEventListener("keydown", (e) => {
-        const activeElement = document.activeElement;
-        if (activeElement && activeElement.tagName === "INPUT" && activeElement.type === "number") {
-          const productInputs = document.querySelectorAll('#order-product-list input[type="number"]');
-          const currentIndex = Array.from(productInputs).indexOf(activeElement);
-          if (e.key === "ArrowDown" || e.key === "ArrowRight") {
-            e.preventDefault();
-            if (currentIndex < productInputs.length - 1) productInputs[currentIndex + 1].focus();
-          } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
-            e.preventDefault();
-            if (currentIndex > 0) productInputs[currentIndex - 1].focus();
-          }
+    // 3. Date Picker Listener (THIS IS THE FIX)
+    const dateInput = document.getElementById("order-download-date");
+    if (dateInput) {
+        // Set the input to today's date by default if empty
+        if (!dateInput.value) {
+            dateInput.value = new Date().toISOString().slice(0, 10);
         }
-      });
+        // When the user changes the date, update the table
+        dateInput.addEventListener("change", (e) => {
+            renderTodaysOrders(e.target.value);
+        });
+    }
 
-    // Image Download Button Listener
+    // 4. Keyboard Navigation
+    const productList = document.getElementById("order-product-list");
+    if (productList) {
+        productList.addEventListener("keydown", (e) => {
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.tagName === "INPUT" && activeElement.type === "number") {
+              const productInputs = document.querySelectorAll('#order-product-list input[type="number"]');
+              const currentIndex = Array.from(productInputs).indexOf(activeElement);
+              if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+                e.preventDefault();
+                if (currentIndex < productInputs.length - 1) productInputs[currentIndex + 1].focus();
+              } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+                e.preventDefault();
+                if (currentIndex > 0) productInputs[currentIndex - 1].focus();
+              }
+            }
+        });
+    }
+
+    // 5. Report & Print Listeners
     document
       .getElementById("download-store-orders-img-btn")
       .addEventListener("click", handleDownloadStoreReportImage);
 
-    // NEW: Print Button Listener
     document
       .getElementById("print-store-report-btn")
       .addEventListener("click", handlePrintStoreReport);
 
-    const momoStickerStoreSelect = document.getElementById(
-      "momo-sticker-store-select"
-    );
-    momoStickerStoreSelect.innerHTML =
-      "<option value=''>Select Store</option>" +
-      stores
-        .map((s) => `<option value="${s.storeName}">${s.storeName}</option>`)
-        .join("");
-        
     document
       .getElementById("download-momo-sticker-btn")
       .addEventListener("click", handleDownloadMomoSticker);
@@ -708,12 +723,20 @@ document.addEventListener("DOMContentLoaded", async function() {
       });
   }
 
-  function bindBillingListeners() {
+function bindBillingListeners() {
+    // Listener for the Order Bill
     document
       .getElementById("generate-bill-btn")
       .addEventListener("click", handleGenerateBill);
+    
+    // Listener for the new Payment Receipt
+    document
+      .getElementById("generate-receipt-btn")
+      .addEventListener("click", handleGeneratePaymentReceipt);
+
+    // Populate Store Dropdown
     const storeSelect = document.getElementById("billing-store-select");
-    storeSelect.innerHTML += stores
+    storeSelect.innerHTML = "<option value=''>Select a Store</option>" + stores
       .map((s) => `<option value="${s.storeName}">${s.storeName}</option>`)
       .join("");
   }
@@ -998,35 +1021,30 @@ function bindAgentListeners() {
       `<tr><td colspan="4" class="text-center p-4 text-gray-500">No products added yet.</td></tr>`;
   };
 
- const renderStoreOptionsForOrder = () => {
+const renderStoreOptionsForOrder = () => {
     const orderStoreSelect = document.getElementById("order-store-select");
     const storeDownloadSelect = document.getElementById("store-download-select");
     const momoStickerStoreSelect = document.getElementById("momo-sticker-store-select");
 
-    // Exit if the main order select doesn't exist on this page
     if (!orderStoreSelect) return;
 
-    // Get a sorted list of all unique store names from your stores array
     const allStoresInvolved = [
       ...new Set(stores.map((s) => s.storeName)),
     ].sort();
 
-    // Create the standard options HTML (used for placing orders and reports)
     const storeOptions =
       "<option value=''>Select Store</option>" +
       allStoresInvolved
         .map((store) => `<option value="${store}">${store}</option>`)
         .join("");
 
-    // 1. Populate Place Order Dropdown
     orderStoreSelect.innerHTML = storeOptions;
 
-    // 2. Populate Report Download Dropdown
     if (storeDownloadSelect) {
       storeDownloadSelect.innerHTML = storeOptions;
     }
 
-    // 3. Populate Momo Sticker Dropdown (With "All Stores" option)
+    // This part adds the "All Stores" option
     if (momoStickerStoreSelect) {
       momoStickerStoreSelect.innerHTML =
         "<option value=''>Select Store</option><option value='all'>All Stores</option>" +
@@ -1091,13 +1109,106 @@ function bindAgentListeners() {
     });
   };
 
-  const renderTodaysOrders = () => {
+            function handleGeneratePaymentReceipt() {
+    const storeName = document.getElementById("billing-store-select").value;
+    const billDate = document.getElementById("billing-date").value;
+
+    if (!storeName || !billDate) {
+      alert("Please select a store and a date.");
+      return;
+    }
+
+    // 1. Fetch Payments for that specific date
+    const relevantPayments = payments.filter((p) => {
+      const paymentDate = new Date(p.date).toISOString().slice(0, 10);
+      return p.storeName === storeName && paymentDate === billDate;
+    });
+
+    if (relevantPayments.length === 0) {
+      alert(`No payments found for ${storeName} on ${new Date(billDate).toLocaleDateString("en-GB")}.`);
+      return;
+    }
+
+    // 2. Calculate Totals
+    const cashPaid = relevantPayments.reduce((sum, p) => sum + (p.cashAmount || 0), 0);
+    const onlinePaid = relevantPayments.reduce((sum, p) => sum + (p.onlineAmount || 0), 0);
+    const totalPaid = cashPaid + onlinePaid;
+
+    // 3. Calculate Dues
+    // "Previous Due" is the balance BEFORE this date's transactions
+    const previousDue = calculateDue(storeName, billDate, false);
+    
+    // "Current Due" is the balance AFTER this date's transactions (inclusive)
+    const currentDueAmount = calculateDue(storeName, billDate, true);
+
+    const billOutput = document.getElementById("bill-output");
+
+    // 4. Generate HTML
+    billOutput.innerHTML = `
+        <div class="relative min-h-[300px]">
+            <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="bill-watermark">
+            
+            <div class="flex items-center space-x-4 mb-6 border-b pb-4">
+                <img src="image_6a1dd8.png" alt="CastleMOMO Logo" class="h-16 w-16">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">PAYMENT RECEIPT</h2>
+                    <p class="text-gray-600 font-semibold">${storeName}</p>
+                    <p class="text-sm text-gray-500">Date: ${new Date(billDate).toLocaleDateString("en-GB")}</p>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <p class="text-lg text-gray-700 mb-4">Received with thanks from <strong>${storeName}</strong>:</p>
+                
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Cash Payment:</span>
+                        <span class="font-semibold">₹${cashPaid.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Online Payment:</span>
+                        <span class="font-semibold">₹${onlinePaid.toFixed(2)}</span>
+                    </div>
+                    <div class="border-t border-gray-300 my-2"></div>
+                    <div class="flex justify-between text-lg text-green-700">
+                        <span class="font-bold">Total Received:</span>
+                        <span class="font-bold">₹${totalPaid.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right space-y-2">
+                <p class="text-gray-600">Previous Balance: <span class="font-medium text-gray-800">₹${previousDue.toFixed(2)}</span></p>
+                <p class="text-gray-600">Less: Paid Amount: <span class="font-medium text-gray-800">₹${totalPaid.toFixed(2)}</span></p>
+                <div class="border-t border-gray-300 w-1/2 ml-auto my-2"></div>
+                <p class="text-xl font-bold text-gray-900">Current Balance Due: ₹${currentDueAmount.toFixed(2)}</p>
+            </div>
+            
+            <div class="mt-12 text-center text-xs text-gray-400">
+                <p>This is a computer-generated receipt.</p>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("bill-output-container").classList.remove("hidden");
+
+    // Set up buttons for Sharing/Downloading
+    document.getElementById("share-bill-btn").onclick = () => shareBillAsImage(storeName + "_Receipt", billOutput);
+    document.getElementById("download-bill-btn").onclick = () => downloadBillAsImage(storeName + "_Receipt", billOutput);
+  }
+
+const renderTodaysOrders = (dateString = null) => {
     const todaysOrdersTableBody = document.getElementById("todays-orders-table-body");
     if (!todaysOrdersTableBody) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const todaysOrders = orders.filter((o) => o.date.startsWith(today));
-    todaysOrdersTableBody.innerHTML = todaysOrders.length
-      ? todaysOrders
+
+    // Use the provided date, or default to today if none is provided
+    const targetDate = dateString || new Date().toISOString().slice(0, 10);
+
+    // Filter orders by the target date
+    const filteredOrders = orders.filter((o) => o.date.startsWith(targetDate));
+
+    todaysOrdersTableBody.innerHTML = filteredOrders.length
+      ? filteredOrders
           .map(
             (order) => `
         <tr class="hover:bg-gray-50">
@@ -1125,7 +1236,7 @@ function bindAgentListeners() {
         </tr>`
           )
           .join("")
-      : `<tr><td colspan="7" class="text-center p-4 text-gray-500">No orders placed today.</td></tr>`;
+      : `<tr><td colspan="7" class="text-center p-4 text-gray-500">No orders found for ${targetDate}.</td></tr>`;
   };
 
   const renderAgents = () => {
@@ -1447,7 +1558,7 @@ function bindAgentListeners() {
     }
   }
 
-  function handleGenerateBill() {
+function handleGenerateBill() {
     const storeName = document.getElementById("billing-store-select").value;
     const billDate = document.getElementById("billing-date").value;
     if (!storeName || !billDate) {
@@ -1594,16 +1705,8 @@ function bindAgentListeners() {
     } else {
       returnsHtml = `<h3 class="text-lg font-semibold border-b pb-2 mb-4 mt-6">Returns</h3><p class="text-gray-500">No returns for this day.</p>`;
     }
-    const previousDuePayment = duePayments.find(
-      (dp) => dp.storeName === storeName
-    );
 
-    let duePaymentHtml = "";
-    if (previousDuePayment) {
-      duePaymentHtml = `<p class="text-lg">Previous Due Payment Added: ₹${previousDuePayment.amount.toFixed(
-        2
-      )}</p>`;
-    }
+    // --- MODIFICATION: Removed the "Previous Due Payment Added" logic here ---
 
     billOutput.innerHTML = `
                 <div class="relative min-h-[300px]">
@@ -1622,7 +1725,7 @@ function bindAgentListeners() {
                         </div>
                     </div>
                     <div class="border-t mt-8 pt-4 text-right">
-                        ${duePaymentHtml}
+                        
                         <p class="text-lg">Total Previous Due: ₹${previousDue.toFixed(
                           2
                         )}</p>
@@ -1907,7 +2010,7 @@ function bindAgentListeners() {
       });
   }
 
-  function handleDownloadPaymentsReport() {
+function handleDownloadPaymentsReport() {
     const startDateStr = document.getElementById(
       "payment-download-start-date"
     ).value;
@@ -1927,26 +2030,37 @@ function bindAgentListeners() {
       return;
     }
 
-    const allStoresInvolved = [
-      ...new Set([
-        ...orders.map((o) => o.storeName),
-        ...payments.map((p) => p.storeName),
-      ]),
-    ].sort();
-    const storesToProcess =
-      storeFilter === "all" ? allStoresInvolved : [storeFilter];
+    // 1. DETERMINE WHICH STORES TO PROCESS
+    let storesToProcess = [];
+    if (storeFilter === "all") {
+        // If "All Stores" is selected, get every store that has ever had an order or payment
+        storesToProcess = [
+            ...new Set([
+                ...orders.map((o) => o.storeName),
+                ...payments.map((p) => p.storeName),
+            ]),
+        ].sort();
+    } else {
+        // If a specific store is selected, ONLY process that one
+        storesToProcess = [storeFilter];
+    }
 
     const finalReportData = [
       ["Date", "Shop", "Bill (₹)", "Cash (₹)", "Online (₹)", "Due (₹)"],
     ];
     let hasData = false;
 
+    // 2. LOOP THROUGH EACH SELECTED STORE
     for (const storeName of storesToProcess) {
+      // Calculate Opening Balance (Everything BEFORE the start date)
       let runningBalance = calculateDue(storeName, startDateStr, false);
 
+      // Add a separator row if we are printing multiple stores
       if (storeFilter === "all" && finalReportData.length > 1) {
         finalReportData.push([]);
       }
+
+      // Add Opening Balance Row
       finalReportData.push([
         `Opening Balance for ${storeName} as on ${new Date(
           startDateStr
@@ -1958,6 +2072,7 @@ function bindAgentListeners() {
         runningBalance.toFixed(2),
       ]);
 
+      // Initialize daily summary for the date range
       const dailySummary = {};
       const startDate = new Date(startDateStr);
       const endDate = new Date(endDateStr);
@@ -1976,10 +2091,11 @@ function bindAgentListeners() {
         };
       }
 
+      // 3. AGGREGATE DATA (STRICTLY FILTERED BY storeName)
       orders
         .filter(
           (o) =>
-            o.storeName === storeName &&
+            o.storeName === storeName && // Strict check
             o.date.slice(0, 10) >= startDateStr &&
             o.date.slice(0, 10) <= endDateStr
         )
@@ -1992,7 +2108,7 @@ function bindAgentListeners() {
       payments
         .filter(
           (p) =>
-            p.storeName === storeName &&
+            p.storeName === storeName && // Strict check
             p.date.slice(0, 10) >= startDateStr &&
             p.date.slice(0, 10) <= endDateStr
         )
@@ -2005,7 +2121,7 @@ function bindAgentListeners() {
       returns
         .filter(
           (r) =>
-            r.storeName === storeName &&
+            r.storeName === storeName && // Strict check
             r.date.slice(0, 10) >= startDateStr &&
             r.date.slice(0, 10) <= endDateStr
         )
@@ -2015,49 +2131,64 @@ function bindAgentListeners() {
             r.totalReturnValue - r.commissionAdjustment;
         });
 
+      // 4. GENERATE ROWS FOR THIS STORE
       Object.keys(dailySummary)
         .sort()
         .forEach((dateStr) => {
           const day = dailySummary[dateStr];
           const netChange = day.bill - day.returns - day.cash - day.online;
-          if (Math.abs(netChange) < 0.01) {
-            return;
+          
+          // Only show rows where something happened
+          if (
+              Math.abs(day.bill) > 0.01 || 
+              Math.abs(day.cash) > 0.01 || 
+              Math.abs(day.online) > 0.01 || 
+              Math.abs(day.returns) > 0.01
+          ) {
+            hasData = true;
+            runningBalance += netChange;
+            finalReportData.push([
+              new Date(dateStr).toLocaleDateString("en-GB"),
+              storeName,
+              day.bill > 0 ? day.bill.toFixed(2) : "-",
+              day.cash > 0 ? day.cash.toFixed(2) : "-",
+              day.online > 0 ? day.online.toFixed(2) : "-",
+              runningBalance.toFixed(2),
+            ]);
           }
-          hasData = true;
-          runningBalance += netChange;
-          finalReportData.push([
-            new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-GB"),
-            storeName,
-            day.bill > 0 ? day.bill.toFixed(2) : "-",
-            day.cash > 0 ? day.cash.toFixed(2) : "-",
-            day.online > 0 ? day.online.toFixed(2) : "-",
-            runningBalance.toFixed(2),
-          ]);
         });
+        
+        // Add Closing Balance Row
+        finalReportData.push([
+            `Closing Balance for ${storeName}`,
+            "",
+            "",
+            "",
+            "",
+            runningBalance.toFixed(2)
+        ]);
+        finalReportData.push([]); // Empty row for spacing
     }
 
     if (!hasData && storesToProcess.length > 0) {
-      let hasOpeningBalance = false;
-      finalReportData.forEach((row) => {
-        if (row[0].startsWith("Opening Balance")) {
-          hasOpeningBalance = true;
-        }
-      });
-      if (!hasOpeningBalance) {
-        alert(
-          "No transaction data found for the selected stores in the specified date range."
-        );
-        return;
-      }
+      // If we found no transaction data, we still check if we have valid opening balances
+      // But generally, we want to warn the user if the sheet is mostly empty
+      const userConfirmed = confirm("No transactions found for the selected range. Do you still want to download the Opening/Closing balances?");
+      if(!userConfirmed) return;
     } else if (storesToProcess.length === 0) {
       alert("No stores found to process.");
       return;
     }
 
+    // 5. EXPORT TO EXCEL
     const worksheet = XLSX.utils.aoa_to_sheet(finalReportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger Report");
-    const fileName = `Ledger_Report_${storeFilter}_${startDateStr}_to_${endDateStr}.xlsx`;
+    
+    // Construct a nice filename
+    const fileStoreName = storeFilter === "all" ? "All_Stores" : storeFilter;
+    const fileName = `Ledger_${fileStoreName}_${startDateStr}_to_${endDateStr}.xlsx`;
+    
     XLSX.writeFile(workbook, fileName);
   }
 
