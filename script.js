@@ -756,6 +756,10 @@ function bindAgentListeners() {
     const agentDetailsView = document.getElementById("agent-details-view");
     const addAgentForm = document.getElementById("add-agent-form");
     const downloadStatementBtn = document.getElementById("download-agent-statement-btn");
+    
+    // NEW Elements for Edit Modal
+    const editAgentForm = document.getElementById("edit-agent-form");
+    const cancelEditAgentBtn = document.getElementById("cancel-edit-agent");
 
     // 3. Populate Agent Dropdown
     agentSelect.innerHTML =
@@ -764,7 +768,7 @@ function bindAgentListeners() {
         .map((a) => `<option value="${a.agentName}">${a.agentName}</option>`)
         .join("");
 
-    // 4. Handle Dropdown Change
+    // 4. Listeners
     agentSelect.addEventListener("change", (e) => {
       const selectedAgentName = e.target.value;
       if (selectedAgentName) {
@@ -775,7 +779,6 @@ function bindAgentListeners() {
       }
     });
 
-    // 5. Handle Download Button
     downloadStatementBtn.addEventListener("click", () => {
       const selectedAgentName = agentSelect.value;
       const monthYear = document.getElementById("agent-report-month").value;
@@ -786,34 +789,56 @@ function bindAgentListeners() {
       }
     });
 
-    // 6. Handle Add Agent Form & Checkbox Logic (THE FIX IS HERE)
+    // 5. Add Agent Form Logic
     if (addAgentForm) {
       addAgentForm.addEventListener("submit", handleAddAgent);
-      
       const agentStoreList = document.getElementById("agent-store-list");
-      
-      // Remove old listener to avoid duplicates if any, then add new one
+      // Use clone to reset listeners
       const newAgentStoreList = agentStoreList.cloneNode(true);
       agentStoreList.parentNode.replaceChild(newAgentStoreList, agentStoreList);
 
       newAgentStoreList.addEventListener("change", (e) => {
         if (e.target.type === "checkbox") {
-          // FIX: Use DOM traversal to find the sibling input reliably
-          // Find the parent container (the flex row)
           const parentRow = e.target.closest('div.flex'); 
-          // Find the number input inside that specific row
           const commInput = parentRow.querySelector('input[type="number"]');
-
           if (commInput) {
             commInput.disabled = !e.target.checked;
-            if (!e.target.checked) {
-              commInput.value = ""; // Clear value if unchecked
-            } else {
-              commInput.focus(); // Focus user cursor there immediately
-            }
+            if (!e.target.checked) commInput.value = ""; 
+            else commInput.focus();
           }
         }
       });
+    }
+
+    // 6. NEW: Edit Agent Form Logic
+    if (editAgentForm) {
+        editAgentForm.addEventListener("submit", handleEditAgent);
+        
+        // Handle Cancel Button
+        if (cancelEditAgentBtn) {
+            cancelEditAgentBtn.addEventListener("click", () => {
+                document.getElementById("edit-agent-modal").classList.add("hidden");
+            });
+        }
+
+        // Handle Checkbox toggling in Edit Modal
+        const editAgentStoreList = document.getElementById("edit-agent-store-list");
+        if (editAgentStoreList) {
+             const newEditList = editAgentStoreList.cloneNode(true);
+             editAgentStoreList.parentNode.replaceChild(newEditList, editAgentStoreList);
+
+             newEditList.addEventListener("change", (e) => {
+                if (e.target.type === "checkbox") {
+                  const parentRow = e.target.closest('div.flex'); 
+                  const commInput = parentRow.querySelector('input[type="number"]');
+                  if (commInput) {
+                    commInput.disabled = !e.target.checked;
+                    if (!e.target.checked) commInput.value = ""; 
+                    else commInput.focus();
+                  }
+                }
+             });
+        }
     }
 
     renderAgents();
@@ -1255,7 +1280,7 @@ const renderTodaysOrders = (dateString = null) => {
       : `<tr><td colspan="7" class="text-center p-4 text-gray-500">No orders found for ${targetDate}.</td></tr>`;
   };
 
-  const renderAgents = () => {
+const renderAgents = () => {
     const agentsTableBody = document.getElementById("agents-table-body");
     if (!agentsTableBody) return;
     agentsTableBody.innerHTML =
@@ -1271,7 +1296,10 @@ const renderTodaysOrders = (dateString = null) => {
                   `<div><strong>${store}:</strong> ${comm}%</div>`
               )
               .join("")}</td>
-            <td class="p-4 space-x-2"><button class="text-red-500 hover:text-red-700 font-semibold" onclick="removeAgent(${index})">Delete</button></td>
+            <td class="p-4 space-x-2">
+                <button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openEditAgentModal(${index})">Edit</button>
+                <button class="text-red-500 hover:text-red-700 font-semibold" onclick="removeAgent(${index})">Delete</button>
+            </td>
         </tr>`
         )
         .join("") ||
@@ -2548,29 +2576,31 @@ function handleDownloadPaymentsReport() {
 function handleDownloadMomoSticker() {
     const storeName = document.getElementById("momo-sticker-store-select").value;
     
+    // 1. Get the date from the picker, or default to today if empty
+    const dateInputVal = document.getElementById("order-download-date").value;
+    const selectedDate = dateInputVal ? dateInputVal : new Date().toISOString().slice(0, 10);
+
     if (!storeName) {
       alert("Please select a store (or All Stores) to download stickers.");
       return;
     }
 
-    const today = new Date().toISOString().slice(0, 10);
-    // This array will hold all the rows for our Excel file
     const worksheetData = []; 
 
-    // --- Helper Function: adds a specific store's momo data to the sheet ---
+    // --- Helper Function ---
     const processStoreStickers = (targetStoreName) => {
-        // Find orders for this store today
-        const ordersToday = orders.filter(
-            (o) => o.storeName === targetStoreName && o.date.startsWith(today)
+        // Filter orders by the SELECTED DATE, not just today
+        const ordersForDate = orders.filter(
+            (o) => o.storeName === targetStoreName && o.date.startsWith(selectedDate)
         );
 
-        if (ordersToday.length === 0) return false;
+        if (ordersForDate.length === 0) return false;
 
         const aggregatedItems = {};
         let hasMomo = false;
 
-        // Aggregate counts for items containing "momo"
-        ordersToday.forEach((order) => {
+        // Aggregate "momo" items
+        ordersForDate.forEach((order) => {
             order.items.forEach((item) => {
                 if (item.productName.toLowerCase().includes("momo")) {
                     if (!aggregatedItems[item.productName]) {
@@ -2582,22 +2612,14 @@ function handleDownloadMomoSticker() {
             });
         });
 
-        // If this store has no momos today, skip it
         if (!hasMomo) return false;
 
-        // --- Add to Worksheet Data ---
-        // 1. Store Name Header (Bold/Uppercased style)
+        // Add to Worksheet
         worksheetData.push([targetStoreName.toUpperCase()]); 
-        
-        // 2. Column Headers
         worksheetData.push(["Item", "Quantity"]); 
-
-        // 3. Item Rows
         Object.entries(aggregatedItems).forEach(([item, quantity]) => {
             worksheetData.push([item, quantity]);
         });
-
-        // 4. Add gap (empty rows) after this store
         worksheetData.push([]); 
         worksheetData.push([]); 
         
@@ -2606,48 +2628,39 @@ function handleDownloadMomoSticker() {
 
     // --- Main Logic ---
     if (storeName === "all") {
-        // Get all stores that have orders today to avoid checking empty ones
         const storesWithOrders = [...new Set(orders
-            .filter(o => o.date.startsWith(today))
+            .filter(o => o.date.startsWith(selectedDate))
             .map(o => o.storeName)
         )].sort();
 
         let anyDataFound = false;
-
-        // Loop through every store and add their block to the sheet
         storesWithOrders.forEach(store => {
-            const hasData = processStoreStickers(store);
-            if (hasData) anyDataFound = true;
+            if (processStoreStickers(store)) anyDataFound = true;
         });
 
         if (!anyDataFound) {
-            alert("No Momo orders found for any store today.");
+            alert(`No Momo orders found for any store on ${selectedDate}.`);
             return;
         }
 
     } else {
-        // Handle Single Store Selection
+        // Single Store Logic
         const hasData = processStoreStickers(storeName);
         if (!hasData) {
-            alert(`No Momo orders found for ${storeName} today.`);
+            alert(`No Momo orders found for ${storeName} on ${selectedDate}.`);
             return;
         }
     }
 
     // --- Generate Excel ---
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    
-    // Optional: Set column widths (Col A wider, Col B narrower)
-    const wscols = [
-        { wch: 30 }, 
-        { wch: 10 } 
-    ];
+    const wscols = [{ wch: 30 }, { wch: 10 }];
     worksheet['!cols'] = wscols;
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Momo Stickers");
 
-    const fileName = `Momo_Stickers_${storeName === 'all' ? 'All_Stores' : storeName}_${today}.xlsx`;
+    const fileName = `Momo_Stickers_${storeName === 'all' ? 'All_Stores' : storeName}_${selectedDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
 
@@ -2674,7 +2687,7 @@ function handleDownloadMomoSticker() {
   // MISSING FUNCTIONS FIX
   // ---------------------------------------------------------
 
-  function handlePaymentStoreSelect(e) {
+function handlePaymentStoreSelect(e) {
     const storeName = e.target.value;
     const dueInfoDiv = document.getElementById("store-due-info");
     const orderInfoDiv = document.getElementById("store-order-total-info");
@@ -2688,16 +2701,23 @@ function handleDownloadMomoSticker() {
     // 1. Calculate Current Due
     const currentDue = calculateDue(storeName, new Date().toISOString().slice(0, 10), true);
     
-    // 2. Calculate Today's Order Total
+    // 2. Calculate Today's Order Total (Net Value after Commission)
     const today = new Date().toISOString().slice(0, 10);
     const todaysOrders = orders.filter(o => o.storeName === storeName && o.date.startsWith(today));
-    const todaysTotal = todaysOrders.reduce((sum, o) => sum + o.total, 0);
+    
+    // FIX: Subtract commission to show the actual bill amount
+    const todaysTotal = todaysOrders.reduce((sum, o) => {
+        const commissionAmount = o.itemsTotal * (o.storeCommission / 100);
+        const netOrderValue = o.total - commissionAmount; // Total (Items+Transport) - Commission
+        return sum + netOrderValue;
+    }, 0);
 
     // Update UI
     dueInfoDiv.textContent = `Current Total Due: ₹${currentDue.toFixed(2)}`;
     dueInfoDiv.classList.remove("hidden");
     
     if (todaysTotal > 0) {
+        // Now this will show ₹270.00 instead of ₹300.00
         orderInfoDiv.textContent = `Today's Orders Value: ₹${todaysTotal.toFixed(2)}`;
         orderInfoDiv.classList.remove("hidden");
     } else {
@@ -2788,6 +2808,73 @@ function handleDownloadMomoSticker() {
     e.target.reset();
   }
 
+// Open the modal and pre-fill it with agent data
+  window.openEditAgentModal = (index) => {
+    promptForPassword(() => {
+      const agent = agents[index];
+      document.getElementById("edit-agent-index").value = index;
+      document.getElementById("edit-agentName").value = agent.agentName;
+
+      const storeListContainer = document.getElementById("edit-agent-store-list");
+      
+      // Generate the list of stores, checking the ones the agent is already assigned to
+      storeListContainer.innerHTML = stores.map(store => {
+          const isChecked = agent.commissions.hasOwnProperty(store.storeName);
+          const currentComm = isChecked ? agent.commissions[store.storeName] : "";
+          
+          return `
+            <div class="flex items-center justify-between">
+                <label class="flex items-center">
+                    <input type="checkbox" name="edit_agent_stores" value="${store.storeName}" 
+                        class="h-4 w-4 text-indigo-600 border-gray-300 rounded" ${isChecked ? "checked" : ""}>
+                    <span class="ml-3 text-gray-700">${store.storeName}</span>
+                </label>
+                <input type="number" step="0.01" name="edit_commission_${store.storeName}" 
+                    value="${currentComm}" placeholder="Comm %" 
+                    class="w-24 p-1 border border-gray-300 rounded-lg text-sm" ${isChecked ? "" : "disabled"}>
+            </div>
+          `;
+      }).join("");
+
+      document.getElementById("edit-agent-modal").classList.remove("hidden");
+    }, `Enter password to edit agent: ${agents[index].agentName}`);
+  };
+
+  // Save changes from the modal
+  function handleEditAgent(e) {
+      e.preventDefault();
+      const index = document.getElementById("edit-agent-index").value;
+      const agentName = document.getElementById("edit-agentName").value;
+      
+      const selectedStoreCheckboxes = document.querySelectorAll('input[name="edit_agent_stores"]:checked');
+      const commissions = {};
+      
+      selectedStoreCheckboxes.forEach(checkbox => {
+          const storeName = checkbox.value;
+          // Find the input corresponding to this store
+          const commissionVal = parseFloat(document.querySelector(`input[name="edit_commission_${storeName}"]`).value);
+          if (!isNaN(commissionVal)) {
+              commissions[storeName] = commissionVal;
+          }
+      });
+
+      if (!agentName || Object.keys(commissions).length === 0) {
+          alert("Please enter Agent Name and select at least one store with a commission.");
+          return;
+      }
+
+      // Update the agent object
+      agents[index] = {
+          agentName,
+          commissions
+      };
+
+      saveData();
+      renderAgents();
+      document.getElementById("edit-agent-modal").classList.add("hidden");
+      alert("Agent updated successfully.");
+  }
+            
   function handleAddAgent(e) {
       e.preventDefault();
       const formData = new FormData(e.target);
