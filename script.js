@@ -2263,75 +2263,62 @@ function handleDownloadPaymentsReport() {
     XLSX.writeFile(workbook, fileName);
   }
 
-  function handleDownloadTodaySheet() {
+function handleDownloadTodaySheet() {
     const today = new Date().toISOString().slice(0, 10);
-    const todaysOrders = orders.filter((o) => o.date.startsWith(today));
+    
+    // 1. Identify all stores that had activity today (either placed an order OR made a payment)
+    const storesWithOrders = orders.filter(o => o.date.startsWith(today)).map(o => o.storeName);
+    const storesWithPayments = payments.filter(p => p.date.startsWith(today)).map(p => p.storeName);
+    
+    // Combine into a unique list of stores
+    const uniqueStores = [...new Set([...storesWithOrders, ...storesWithPayments])].sort();
 
-    if (todaysOrders.length === 0) {
-      alert("No orders were placed today to generate a sheet.");
+    if (uniqueStores.length === 0) {
+      alert("No business activity (orders or payments) recorded for today.");
       return;
     }
 
-    const storeNames = [
-      ...new Set(todaysOrders.map((o) => o.storeName)),
-    ].sort();
-    const productNames = [
-      ...new Set(products.map((p) => p.productName)),
-    ].sort();
-
-    const header = [
-      "Date",
-      "Shop",
-      "Bill (₹)",
-      ...productNames,
-      "Cash (₹)",
-      "Online (₹)",
-      "Paid (₹)",
-      "Due (₹)",
+    // 2. Define the Headers (Payment Focused)
+    const reportData = [
+      ["Date", "Shop", "Bill Amount (₹)", "Cash Paid (₹)", "Online Paid (₹)", "Total Paid (₹)", "Day Balance (₹)"]
     ];
-    const reportData = [header];
 
-    storeNames.forEach((storeName) => {
-      const storeOrders = todaysOrders.filter((o) => o.storeName === storeName);
-      if (storeOrders.length === 0) return;
+    // 3. Calculate Totals for each store
+    uniqueStores.forEach(storeName => {
+        // A. Calculate Today's Bill (Net Total after Commission)
+        const todaysOrders = orders.filter(o => o.storeName === storeName && o.date.startsWith(today));
+        const totalBill = todaysOrders.reduce((sum, o) => {
+            const commissionAmount = o.itemsTotal * (o.storeCommission / 100);
+            return sum + (o.total - commissionAmount);
+        }, 0);
 
-      const storeDetails = stores.find((s) => s.storeName === storeName);
-      const storeCommission = storeDetails
-        ? storeDetails.storeCommission / 100
-        : 0;
+        // B. Calculate Today's Payments
+        const todaysPayments = payments.filter(p => p.storeName === storeName && p.date.startsWith(today));
+        const cashPaid = todaysPayments.reduce((sum, p) => sum + (p.cashAmount || 0), 0);
+        const onlinePaid = todaysPayments.reduce((sum, p) => sum + (p.onlineAmount || 0), 0);
+        const totalPaid = cashPaid + onlinePaid;
 
-      const itemQuantities = {};
-      productNames.forEach((p) => (itemQuantities[p] = 0));
-      let totalBill = 0;
+        // C. Calculate Balance for the day (Bill - Paid)
+        // Positive means they still owe for today's goods. Negative means they paid extra/advance.
+        const dayBalance = totalBill - totalPaid;
 
-      storeOrders.forEach((order) => {
-        totalBill += order.total - order.itemsTotal * storeCommission;
-        order.items.forEach((item) => {
-          if (itemQuantities.hasOwnProperty(item.productName)) {
-            itemQuantities[item.productName] += item.quantity;
-          }
-        });
-      });
-
-      const row = [
-        new Date().toLocaleDateString("en-GB"),
-        storeName,
-        totalBill.toFixed(2),
-      ];
-
-      productNames.forEach((pName) => {
-        row.push(itemQuantities[pName] > 0 ? itemQuantities[pName] : "");
-      });
-
-      row.push("", "", "", "");
-
-      reportData.push(row);
+        reportData.push([
+            new Date().toLocaleDateString("en-GB"),
+            storeName,
+            totalBill.toFixed(2),
+            cashPaid.toFixed(2),
+            onlinePaid.toFixed(2),
+            totalPaid.toFixed(2),
+            dayBalance.toFixed(2)
+        ]);
     });
 
+    // 4. Generate Excel
     const worksheet = XLSX.utils.aoa_to_sheet(reportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Today's Orders");
-    const fileName = `Day_Sheet_${today}.xlsx`;
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Daily Payment Sheet");
+    
+    const fileName = `Payment_Sheet_${today}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
 
