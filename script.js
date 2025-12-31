@@ -819,23 +819,39 @@ function bindAgentListeners() {
     renderAgents();
   }
 
-  function bindPaymentListeners() {
+function bindPaymentListeners() {
+    // 1. Form Listeners
     const addDuePaymentForm = document.getElementById("add-due-payment-form");
     if (addDuePaymentForm) {
       addDuePaymentForm.addEventListener("submit", handleAddDuePayment);
     }
+    
     document
       .getElementById("add-payment-form")
       .addEventListener("submit", handleAddPayment);
+    
     document
       .getElementById("payment-store-select")
       .addEventListener("change", handlePaymentStoreSelect);
+
+    // 2. Download Button Listeners
     document
       .getElementById("download-payments-btn")
       .addEventListener("click", handleDownloadPaymentsReport);
+      
     document
       .getElementById("download-today-sheet-btn")
       .addEventListener("click", handleDownloadTodaySheet);
+
+    // 3. LIVE FILTERING LISTENERS (The Fix)
+    // This connects the dropdowns to the table refreshing logic
+    const filterStoreSelect = document.getElementById("payment-download-store-select");
+    const filterStartDate = document.getElementById("payment-download-start-date");
+    const filterEndDate = document.getElementById("payment-download-end-date");
+
+    if (filterStoreSelect) filterStoreSelect.addEventListener("change", renderPaymentHistory);
+    if (filterStartDate) filterStartDate.addEventListener("change", renderPaymentHistory);
+    if (filterEndDate) filterEndDate.addEventListener("change", renderPaymentHistory);
   }
 
   function bindTransportationListeners() {
@@ -1398,11 +1414,33 @@ const renderTodaysOrders = (dateString = null) => {
     renderPaymentHistory();
   };
 
-  const renderPaymentHistory = () => {
+const renderPaymentHistory = () => {
     const paymentsTableBody = document.getElementById("payments-table-body");
     if (!paymentsTableBody) return;
-    paymentsTableBody.innerHTML = payments.length
-      ? payments
+
+    // 1. Get Filter Values
+    const storeFilter = document.getElementById("payment-download-store-select")?.value || "all";
+    const startDate = document.getElementById("payment-download-start-date")?.value;
+    const endDate = document.getElementById("payment-download-end-date")?.value;
+
+    // 2. Filter the Data
+    const filteredPayments = payments.filter((payment) => {
+      // Check Store
+      if (storeFilter !== "all" && payment.storeName !== storeFilter) {
+        return false;
+      }
+      
+      // Check Date Range (only if dates are selected)
+      const paymentDate = payment.date.slice(0, 10); // YYYY-MM-DD
+      if (startDate && paymentDate < startDate) return false;
+      if (endDate && paymentDate > endDate) return false;
+
+      return true;
+    });
+
+    // 3. Render the Table
+    paymentsTableBody.innerHTML = filteredPayments.length
+      ? filteredPayments
           .map(
             (payment, index) => `
         <tr class="hover:bg-gray-50">
@@ -1414,13 +1452,18 @@ const renderTodaysOrders = (dateString = null) => {
               (payment.cashAmount || 0) + (payment.onlineAmount || 0)
             ).toFixed(2)}</td>
             <td class="p-4 space-x-2">
-                <button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openEditPaymentModal(${index})">Edit</button>
-                <button class="text-red-500 hover:text-red-700 font-semibold" onclick="removePayment(${index})">Delete</button>
+                <button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openEditPaymentModal(${
+                    // We need to find the original index because filtered array indices won't match
+                    payments.indexOf(payment) 
+                })">Edit</button>
+                <button class="text-red-500 hover:text-red-700 font-semibold" onclick="removePayment(${
+                    payments.indexOf(payment)
+                })">Delete</button>
             </td>
         </tr>`
           )
           .join("")
-      : `<tr><td colspan="6" class="text-center p-4 text-gray-500">No payments recorded yet.</td></tr>`;
+      : `<tr><td colspan="6" class="text-center p-4 text-gray-500">No payments found for the selected criteria.</td></tr>`;
   };
 
   function handleAddStore(e) {
