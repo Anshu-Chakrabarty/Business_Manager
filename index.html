@@ -572,7 +572,42 @@
         </form>
       </div>
     </div>
-
+    <div id="edit-agent-modal" class="modal-overlay hidden">
+      <div class="modal-container">
+        <h3 class="text-xl font-semibold mb-4">Edit Agent</h3>
+        <form id="edit-agent-form" class="space-y-4">
+          <input type="hidden" id="edit-agent-index" />
+          <input
+            type="text"
+            id="edit-agentName"
+            placeholder="Agent Name"
+            aria-label="Agent Name"
+            class="w-full p-3 border border-gray-300 rounded-lg"
+            required
+          />
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Modify Stores & Commissions</label>
+            <div id="edit-agent-store-list" class="space-y-2 max-h-60 overflow-y-auto border p-4 rounded-lg">
+                </div>
+          </div>
+          <div class="flex justify-end space-x-4">
+            <button
+              type="button"
+              id="cancel-edit-agent"
+              class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
     <script src="script.js" defer></script>
   </body>
 </html>
